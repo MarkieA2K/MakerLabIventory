@@ -1,4 +1,3 @@
-// LaptopScreen.js
 import React, { useEffect, useState } from 'react';
 import { View, ScrollView, Modal, StyleSheet } from 'react-native';
 import {
@@ -10,28 +9,95 @@ import {
 } from 'react-native-paper';
 import supabase from './supabase';
 
-const LaptopScreen = () => {
+const LaptopScreen = ({ userData }) => {
   const [laptopData, setLaptopData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+
+  const refreshLaptopData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('InventoryLaptopList')
+        .select('*')
+        .not('Laptop_Quantity', 'eq', 0);
+
+      if (error) {
+        console.error('Error refreshing laptop data:', error);
+      } else {
+        setLaptopData(data);
+      }
+    } catch (error) {
+      console.error('Error refreshing laptop data:', error.message);
+    }
+  };
+
+  const borrowLaptopHandler = async () => {
+    try {
+      const { data: borrowData, error: borrowError } = await supabase
+        .from('LaptopBorrowed')
+        .upsert([
+          {
+            User_ID: userData?.User_ID,
+            Laptop_ID: selectedItem?.Laptop_ID,
+            Laptop_Name: selectedItem?.Laptop_Name,
+            Laptop_Brand: selectedItem?.Laptop_Brand,
+            Laptop_Model: selectedItem?.Laptop_Model,
+          },
+        ]);
+
+      if (borrowError) {
+        console.error('Error borrowing data:', borrowError.message);
+      } else {
+        console.log('Data borrowed successfully:', borrowData);
+
+        const { data: updateData, error: updateError } = await supabase
+          .from('InventoryLaptopList')
+          .upsert(
+            [
+              {
+                Laptop_ID: selectedItem?.Laptop_ID,
+                Laptop_Name: selectedItem?.Laptop_Name,
+                Laptop_Brand: selectedItem?.Laptop_Brand,
+                Laptop_Model: selectedItem?.Laptop_Model,
+                Laptop_Quantity: 0,
+              },
+            ],
+            { onConflict: ['Laptop_ID'] }
+          );
+
+        if (updateError) {
+          console.error('Error updating quantity:', updateError.message);
+        } else {
+          console.log('Quantity updated successfully:', updateData);
+          setModalVisible(false);
+          setSuccessModalVisible(true);
+          refreshLaptopData(); // Call the refresh function after successful borrow
+        }
+      }
+    } catch (error) {
+      console.error('Error borrowing data:', error.message);
+    }
+  };
+
+  const fetchLaptopData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('InventoryLaptopList')
+        .select('*')
+        .not('Laptop_Quantity', 'eq', 0);
+
+      if (error) {
+        console.error('Error fetching laptop data:', error);
+      } else {
+        setLaptopData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching laptop data:', error.message);
+    }
+  };
 
   useEffect(() => {
-    const fetchLaptopData = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('InventoryLaptopList')
-          .select('*');
-
-        if (error) {
-          console.error('Error fetching laptop data:', error);
-        } else {
-          setLaptopData(data);
-        }
-      } catch (error) {
-        console.error('Error fetching laptop data:', error.message);
-      }
-    };
-
     fetchLaptopData();
   }, []);
 
@@ -43,6 +109,10 @@ const LaptopScreen = () => {
   const closeModal = () => {
     setModalVisible(false);
     setSelectedItem(null);
+  };
+
+  const closeSuccessModal = () => {
+    setSuccessModalVisible(false);
   };
 
   return (
@@ -83,10 +153,10 @@ const LaptopScreen = () => {
               {/* Placeholder for Borrow Button */}
               <Button
                 mode='outlined'
-                onPress={() => console.log('Borrow button pressed')}
+                onPress={borrowLaptopHandler}
                 style={styles.borrowButton}
               >
-                Log use
+                Borrow
               </Button>
 
               {/* Add more fields as needed */}
@@ -95,6 +165,16 @@ const LaptopScreen = () => {
               </Button>
             </View>
           </ScrollView>
+        </Modal>
+
+        <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
+          <View style={styles.modalContent}>
+            <Title>Success</Title>
+            <Paragraph>Laptop borrowed successfully!</Paragraph>
+            <Button onPress={closeSuccessModal} style={styles.closeButton}>
+              Close
+            </Button>
+          </View>
         </Modal>
       </View>
     </ScrollView>

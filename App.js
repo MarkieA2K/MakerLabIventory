@@ -11,10 +11,11 @@ import {
   Button,
 } from 'react-native-paper';
 import InventoryScreen from './src/InventoryScreen';
-import ScanScreen from './src/ScanScreen';
+
 import SettingsScreen from './src/SettingsScreen';
 import LoginScreen from './src/LoginScreen';
 import LaptopScreen from './src/LaptopScreen'; // Import LaptopScreen
+import ReturnScreen from './src/ReturnScreen';
 import supabase from './src/supabase';
 
 const Tab = createBottomTabNavigator();
@@ -36,23 +37,24 @@ const App = () => {
   const [userData, setUserData] = useState(null);
 
   const setUserSession = (userDisplayName) => {
+    userDisplayName.toString();
     setSessionUser(userDisplayName);
     console.log(userDisplayName);
   };
 
   useEffect(() => {
-    if (loggedIn) {
+    if (loggedIn && sessionUser) {
       // Fetch user data using User_ID
       const fetchUserData = async () => {
         try {
           const { data, error } = await supabase
             .from('InventoryUsers')
             .select('*')
-            .eq('User_ID', sessionUser); // Assuming User_ID is used for identification
+            .eq('User_ID', sessionUser.toString()); // Convert sessionUser to string
 
           if (error) {
             console.error('Error fetching user data:', error);
-          } else if (data) {
+          } else if (data && data.length > 0) {
             setUserData(data[0]);
             setWelcomeModalVisible(true);
           }
@@ -65,6 +67,7 @@ const App = () => {
     }
   }, [loggedIn, sessionUser]);
 
+  const logoutHandler = () => {};
   const closeWelcomeModal = () => {
     setWelcomeModalVisible(false);
   };
@@ -75,12 +78,23 @@ const App = () => {
         {loggedIn ? (
           <Tab.Navigator>
             <Tab.Screen name='Inventory' component={InventoryScreen} />
-            <Tab.Screen name='Laptops' component={LaptopScreen} />
-            <Tab.Screen name='Scan' component={ScanScreen} />
+            <Tab.Screen
+              name='Laptops'
+              children={() => <LaptopScreen userData={userData} />}
+            />
+            <Tab.Screen
+              name='Return'
+              children={() => <ReturnScreen userData={userData} />}
+            />
 
             <Tab.Screen
               name='User'
-              children={() => <SettingsScreen setLoggedIn={setLoggedIn} />}
+              children={() => (
+                <SettingsScreen
+                  setLoggedIn={setLoggedIn}
+                  setSessionUser={setSessionUser}
+                />
+              )}
             />
           </Tab.Navigator>
         ) : (

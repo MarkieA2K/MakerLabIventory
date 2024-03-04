@@ -3,13 +3,14 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { useTheme, Button } from 'react-native-paper';
 
-const SettingsScreen = ({ setLoggedIn }) => {
+const SettingsScreen = ({ setLoggedIn, setSessionUser }) => {
   const theme = useTheme();
 
   const handleLogout = () => {
     // Implement your logout logic here
     // For simplicity, set loggedIn to false
     setLoggedIn(false);
+    setSessionUser('');
   };
 
   return (
