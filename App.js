@@ -11,21 +11,22 @@ import {
   Button,
 } from 'react-native-paper';
 import InventoryScreen from './src/InventoryScreen';
-
 import SettingsScreen from './src/SettingsScreen';
 import LoginScreen from './src/LoginScreen';
 import LaptopScreen from './src/LaptopScreen'; // Import LaptopScreen
 import ReturnScreen from './src/ReturnScreen';
 import supabase from './src/supabase';
+import LaptopLogScreen from './src/LaptopLogScreen';
+import { List } from 'react-native-paper'; // Import List from react-native-paper
 
 const Tab = createBottomTabNavigator();
 
-const grayscaleTheme = {
+const customTheme = {
   ...DefaultTheme,
   colors: {
-    primary: '#333333', // Dark gray
-    accent: '#666666', // Medium gray
-    background: '#ffffff', // White background
+    primary: '#689F38', // Light green (adjust the color as needed)
+    accent: '#BDBDBD', // Light gray
+    background: '#FFFFFF', // White background
     // ... other color settings
   },
 };
@@ -44,13 +45,12 @@ const App = () => {
 
   useEffect(() => {
     if (loggedIn && sessionUser) {
-      // Fetch user data using User_ID
       const fetchUserData = async () => {
         try {
           const { data, error } = await supabase
             .from('InventoryUsers')
             .select('*')
-            .eq('User_ID', sessionUser.toString()); // Convert sessionUser to string
+            .eq('User_ID', sessionUser.toString());
 
           if (error) {
             console.error('Error fetching user data:', error);
@@ -67,26 +67,51 @@ const App = () => {
     }
   }, [loggedIn, sessionUser]);
 
-  const logoutHandler = () => {};
   const closeWelcomeModal = () => {
     setWelcomeModalVisible(false);
   };
 
   return (
-    <PaperProvider theme={grayscaleTheme}>
+    <PaperProvider theme={customTheme}>
       <NavigationContainer>
         {loggedIn ? (
           <Tab.Navigator>
-            <Tab.Screen name='Inventory' component={InventoryScreen} />
+            <Tab.Screen
+              name='Inventory'
+              component={InventoryScreen}
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='clipboard' size={size} />
+                ),
+              }}
+            />
             <Tab.Screen
               name='Laptops'
               children={() => <LaptopScreen userData={userData} />}
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='laptop' size={size} />
+                ),
+              }}
             />
             <Tab.Screen
               name='Return'
               children={() => <ReturnScreen userData={userData} />}
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='arrow-left' size={size} />
+                ),
+              }}
             />
-
+            <Tab.Screen
+              name='Log'
+              component={LaptopLogScreen}
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='history' size={size} />
+                ),
+              }}
+            />
             <Tab.Screen
               name='User'
               children={() => (
@@ -95,6 +120,11 @@ const App = () => {
                   setSessionUser={setSessionUser}
                 />
               )}
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='account' size={size} />
+                ),
+              }}
             />
           </Tab.Navigator>
         ) : (

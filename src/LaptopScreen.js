@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Modal, StyleSheet } from 'react-native';
+import {
+  View,
+  ScrollView,
+  Modal,
+  StyleSheet,
+  RefreshControl,
+} from 'react-native';
 import {
   List,
   Title,
@@ -8,15 +14,18 @@ import {
   Button,
 } from 'react-native-paper';
 import supabase from './supabase';
+import { useFocusEffect } from '@react-navigation/native';
 
 const LaptopScreen = ({ userData }) => {
   const [laptopData, setLaptopData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const refreshLaptopData = async () => {
     try {
+      setRefreshing(true);
       const { data, error } = await supabase
         .from('InventoryLaptopList')
         .select('*')
@@ -29,11 +38,19 @@ const LaptopScreen = ({ userData }) => {
       }
     } catch (error) {
       console.error('Error refreshing laptop data:', error.message);
+    } finally {
+      setRefreshing(false);
     }
   };
 
   const borrowLaptopHandler = async () => {
     try {
+      const currentDate = new Date();
+      const formattedDate = currentDate
+        .toISOString()
+        .slice(0, 19)
+        .replace('T', ' ');
+
       const { data: borrowData, error: borrowError } = await supabase
         .from('LaptopBorrowed')
         .upsert([
@@ -43,6 +60,7 @@ const LaptopScreen = ({ userData }) => {
             Laptop_Name: selectedItem?.Laptop_Name,
             Laptop_Brand: selectedItem?.Laptop_Brand,
             Laptop_Model: selectedItem?.Laptop_Model,
+            Laptop_BorrowDate: formattedDate,
           },
         ]);
 
@@ -72,7 +90,7 @@ const LaptopScreen = ({ userData }) => {
           console.log('Quantity updated successfully:', updateData);
           setModalVisible(false);
           setSuccessModalVisible(true);
-          refreshLaptopData(); // Call the refresh function after successful borrow
+          refreshLaptopData();
         }
       }
     } catch (error) {
@@ -101,6 +119,12 @@ const LaptopScreen = ({ userData }) => {
     fetchLaptopData();
   }, []);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchLaptopData();
+    }, [])
+  );
+
   const handleItemPress = (item) => {
     setSelectedItem(item);
     setModalVisible(true);
@@ -116,7 +140,11 @@ const LaptopScreen = ({ userData }) => {
   };
 
   return (
-    <ScrollView>
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refreshLaptopData} />
+      }
+    >
       <View>
         <List.Section>
           {laptopData.map((item) => (
@@ -138,7 +166,6 @@ const LaptopScreen = ({ userData }) => {
             <View style={styles.modalContent}>
               <Title>{selectedItem?.Laptop_Name}</Title>
 
-              {/* Placeholder for Image Frame */}
               <View style={styles.imageFrame} />
 
               <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
@@ -150,7 +177,6 @@ const LaptopScreen = ({ userData }) => {
               <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
               <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
 
-              {/* Placeholder for Borrow Button */}
               <Button
                 mode='outlined'
                 onPress={borrowLaptopHandler}
@@ -159,7 +185,6 @@ const LaptopScreen = ({ userData }) => {
                 Borrow
               </Button>
 
-              {/* Add more fields as needed */}
               <Button onPress={closeModal} style={styles.closeButton}>
                 Close
               </Button>
@@ -168,9 +193,11 @@ const LaptopScreen = ({ userData }) => {
         </Modal>
 
         <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
-          <View style={styles.modalContent}>
+          <View style={styles.successModalContent}>
             <Title>Success</Title>
-            <Paragraph>Laptop borrowed successfully!</Paragraph>
+            <Paragraph style={styles.successModalText}>
+              Laptop borrowed successfully!
+            </Paragraph>
             <Button onPress={closeSuccessModal} style={styles.closeButton}>
               Close
             </Button>
@@ -193,8 +220,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   imageFrame: {
-    aspectRatio: 1, // Square ratio
-    backgroundColor: '#ddd', // Placeholder color
+    aspectRatio: 1,
+    backgroundColor: '#ddd',
     marginBottom: 16,
   },
   infoRow: {
@@ -212,6 +239,17 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 8,
+  },
+  successModalContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  successModalText: {
+    fontSize: 18,
+    marginBottom: 10,
+    textAlign: 'center', // Center the text horizontally
   },
 });
 

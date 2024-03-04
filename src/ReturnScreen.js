@@ -8,16 +8,17 @@ import {
   TouchableRipple,
   Button,
 } from 'react-native-paper';
+import { useFocusEffect } from '@react-navigation/native';
 import supabase from './supabase';
 
 const ReturnScreen = ({ userData }) => {
   const [returnData, setReturnData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
 
   const fetchReturnData = async () => {
     try {
-      // Fetch data from LaptopBorrowed where User_ID matches the current user
       const { data, error } = await supabase
         .from('LaptopBorrowed')
         .select('*')
@@ -30,12 +31,19 @@ const ReturnScreen = ({ userData }) => {
       }
     } catch (error) {
       console.error('Error fetching return data:', error.message);
+    } finally {
+      // Remove the refreshing state here if needed
     }
   };
 
   useEffect(() => {
     fetchReturnData();
-  }, []);
+  }, []); // No need for refreshing in the dependency array
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchReturnData();
+    }, [])
+  );
 
   const handleItemPress = (item) => {
     setSelectedItem(item);
@@ -47,94 +55,221 @@ const ReturnScreen = ({ userData }) => {
     setSelectedItem(null);
   };
 
+  const closeSuccessModal = () => {
+    setSuccessModalVisible(false);
+  };
+
+  const returnLaptopHandler = async () => {
+    try {
+      const { data: laptopData, error: laptopError } = await supabase
+        .from('LaptopBorrowed')
+        .select('*')
+        .eq('Borrow_ID', selectedItem?.Borrow_ID);
+
+      if (laptopError) {
+        console.error('Error fetching laptop details:', laptopError.message);
+        return;
+      }
+
+      const selectedLaptop = laptopData[0];
+
+      // Fetch user data using User_ID
+      const { data: userData, error: userError } = await supabase
+        .from('InventoryUsers')
+        .select('User_DisplayName')
+        .eq('User_ID', selectedLaptop?.User_ID);
+
+      if (userError) {
+        console.error('Error fetching user data:', userError.message);
+        return;
+      }
+
+      const { data: logData, error: logError } = await supabase
+        .from('InventoryLaptopLog')
+        .upsert([
+          {
+            Laptop_ID: selectedItem?.Laptop_ID,
+            Laptop_Name: selectedLaptop?.Laptop_Name,
+            Laptop_User: userData[0]?.User_DisplayName, // Use User_GivenName from userData
+            Laptop_SignOut: selectedLaptop?.Laptop_BorrowDate,
+            Laptop_SignIn: new Date().toISOString(),
+          },
+        ]);
+
+      if (logError) {
+        console.error('Error adding log entry:', logError.message);
+      } else {
+        console.log('Log entry added successfully:', logData);
+
+        const { data: deleteData, error: deleteError } = await supabase
+          .from('LaptopBorrowed')
+          .delete()
+          .eq('Borrow_ID', selectedItem?.Borrow_ID);
+
+        if (deleteError) {
+          console.error(
+            'Error deleting laptop from LaptopBorrowed:',
+            deleteError.message
+          );
+        } else {
+          console.log('Laptop deleted from LaptopBorrowed:', deleteData);
+
+          const { data: updateQuantityData, error: updateQuantityError } =
+            await supabase.from('InventoryLaptopList').upsert(
+              [
+                {
+                  Laptop_ID: selectedItem?.Laptop_ID,
+                  Laptop_Name: selectedItem?.Laptop_Name,
+                  Laptop_Brand: selectedItem?.Laptop_Brand,
+                  Laptop_Model: selectedItem?.Laptop_Model,
+                  Laptop_Quantity: 1,
+                },
+              ],
+              { onConflict: ['Laptop_ID'] }
+            );
+
+          if (updateQuantityError) {
+            console.error(
+              'Error updating quantity:',
+              updateQuantityError.message
+            );
+          } else {
+            console.log('Quantity updated successfully:', updateQuantityData);
+            closeModal();
+            fetchReturnData();
+            setSuccessModalVisible(true); // Show success modal after returning laptop
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error returning laptop:', error.message);
+    }
+  };
+
+  const InfoRow = ({ label, value }) => (
+    <View style={styles.infoRow}>
+      <Paragraph style={styles.infoLabel}>{label}</Paragraph>
+      <Paragraph style={styles.infoValue}>{value}</Paragraph>
+    </View>
+  );
+
+  const formatDate = (dateString) => {
+    const options = {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    };
+    return new Date(dateString).toLocaleString(undefined, options);
+  };
+
+  const styles = StyleSheet.create({
+    modalContent: {
+      padding: 16,
+    },
+    imageFrame: {
+      aspectRatio: 1, // Square ratio
+      backgroundColor: '#ddd', // Placeholder color
+      marginBottom: 16,
+    },
+    infoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: 8,
+    },
+    infoLabel: {
+      fontWeight: 'bold',
+    },
+    infoValue: {},
+    returnButton: {
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    closeButton: {
+      marginTop: 8,
+    },
+    // Add or update styles for the success modal content
+    successModalContent: {
+      marginTop: 300,
+      padding: 16,
+      alignItems: 'center', // Center content horizontally
+      justifyContent: 'center', // Center content vertically
+    },
+    successModalText: {
+      fontSize: 18,
+      marginBottom: 10,
+      textAlign: 'center', // Center text within the modal
+    },
+  });
+
   return (
-    <ScrollView>
-      <View>
-        <List.Section>
-          {returnData.map((item) => (
-            <TouchableRipple
-              key={item.Laptop_ID}
-              onPress={() => handleItemPress(item)}
+    <View>
+      <List.Section>
+        {returnData.map((item) => (
+          <TouchableRipple
+            key={item.Laptop_ID}
+            onPress={() => handleItemPress(item)}
+          >
+            <List.Item
+              title={item.Laptop_Name}
+              description={item.Laptop_Description}
+              left={(props) => <List.Icon {...props} icon='laptop' />}
+            />
+          </TouchableRipple>
+        ))}
+      </List.Section>
+
+      <Modal visible={modalVisible} onRequestClose={closeModal}>
+        <ScrollView>
+          <View style={styles.modalContent}>
+            <Title>{selectedItem?.Laptop_Name}</Title>
+
+            {/* Placeholder for Image Frame */}
+            <View style={styles.imageFrame} />
+
+            <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
+            <InfoRow label='Name' value={selectedItem?.Laptop_Name} />
+
+            <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
+            <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
+            <InfoRow
+              label='Borrow Date'
+              value={formatDate(selectedItem?.Laptop_BorrowDate)}
+            />
+
+            {/* Placeholder for Return Button */}
+            <Button
+              mode='outlined'
+              onPress={returnLaptopHandler}
+              style={styles.returnButton}
             >
-              <List.Item
-                title={item.Laptop_Name}
-                description={item.Laptop_Description}
-                left={(props) => <List.Icon {...props} icon='laptop' />}
-              />
-            </TouchableRipple>
-          ))}
-        </List.Section>
+              Return
+            </Button>
 
-        <Modal visible={modalVisible} onRequestClose={closeModal}>
-          <ScrollView>
-            <View style={styles.modalContent}>
-              <Title>{selectedItem?.Laptop_Name}</Title>
+            {/* Add more fields as needed */}
+            <Button onPress={closeModal} style={styles.closeButton}>
+              Close
+            </Button>
+          </View>
+        </ScrollView>
+      </Modal>
 
-              {/* Placeholder for Image Frame */}
-              <View style={styles.imageFrame} />
-
-              <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
-              <InfoRow label='Name' value={selectedItem?.Laptop_Name} />
-              <InfoRow
-                label='Description'
-                value={selectedItem?.Laptop_Description}
-              />
-              <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
-              <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
-
-              {/* Placeholder for Return Button */}
-              <Button
-                mode='outlined'
-                onPress={returnLaptopHandler}
-                style={styles.returnButton}
-              >
-                Return
-              </Button>
-
-              {/* Add more fields as needed */}
-              <Button onPress={closeModal} style={styles.closeButton}>
-                Close
-              </Button>
-            </View>
-          </ScrollView>
-        </Modal>
-      </View>
-    </ScrollView>
+      <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
+        <ScrollView>
+          <View style={styles.successModalContent}>
+            <Title>Success</Title>
+            <Paragraph style={styles.successModalText}>
+              Laptop returned successfully!
+            </Paragraph>
+            <Button onPress={closeSuccessModal} style={styles.closeButton}>
+              Close
+            </Button>
+          </View>
+        </ScrollView>
+      </Modal>
+    </View>
   );
 };
-
-const InfoRow = ({ label, value }) => (
-  <View style={styles.infoRow}>
-    <Paragraph style={styles.infoLabel}>{label}</Paragraph>
-    <Paragraph style={styles.infoValue}>{value}</Paragraph>
-  </View>
-);
-
-const styles = StyleSheet.create({
-  modalContent: {
-    padding: 16,
-  },
-  imageFrame: {
-    aspectRatio: 1, // Square ratio
-    backgroundColor: '#ddd', // Placeholder color
-    marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  infoLabel: {
-    fontWeight: 'bold',
-  },
-  infoValue: {},
-  returnButton: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  closeButton: {
-    marginTop: 8,
-  },
-});
 
 export default ReturnScreen;

@@ -5,7 +5,8 @@ import { TextInput, Button, Title, useTheme } from 'react-native-paper';
 import supabase from './supabase'; // Import your Supabase client instance
 
 const LoginScreen = ({ setLoggedIn, setUserSession }) => {
-  const theme = useTheme();
+  const theme = useTheme(); // Use the theme hook
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -40,8 +41,12 @@ const LoginScreen = ({ setLoggedIn, setUserSession }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Title style={styles.title}>A2K Inventory</Title>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <Title style={[styles.title, { color: theme.colors.text }]}>
+        A2K Inventory
+      </Title>
       <View style={styles.formContainer}>
         <TextInput
           label='Username'
@@ -90,31 +95,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ECF0F1', // Light gray background
   },
   title: {
     fontSize: 24,
     marginBottom: 16,
-    color: '#34495E', // Dark grayish blue text
   },
   formContainer: {
     width: '80%',
-    backgroundColor: '#ffffff', // White background for the form container
     padding: 16,
     borderRadius: 8,
-    elevation: 4, // Add elevation for a subtle shadow
+    elevation: 4,
   },
   input: {
     marginBottom: 16,
-    backgroundColor: '#ffffff', // Solid white background
-    borderWidth: 1, // Border width
-    borderColor: '#BDC3C7', // Border color (light gray)
-    borderRadius: 4, // Border radius
-    paddingHorizontal: 12, // Horizontal padding
+    borderWidth: 1,
+    borderColor: '#BDC3C7',
+    borderRadius: 4,
+    paddingHorizontal: 12,
   },
   loginButton: {
     marginTop: 16,
-    backgroundColor: '#2C3E50', // Dark grayish blue
   },
 });
 
