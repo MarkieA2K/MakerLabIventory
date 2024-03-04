@@ -1,6 +1,11 @@
-// ReturnScreen.js
 import React, { useEffect, useState } from 'react';
-import { View, ScrollView, Modal, StyleSheet } from 'react-native';
+import {
+  View,
+  ScrollView,
+  Modal,
+  StyleSheet,
+  RefreshControl,
+} from 'react-native';
 import {
   List,
   Title,
@@ -16,6 +21,9 @@ const ReturnScreen = ({ userData }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [returnButtonDisabled, setReturnButtonDisabled] = useState(false);
 
   const fetchReturnData = async () => {
     try {
@@ -32,13 +40,14 @@ const ReturnScreen = ({ userData }) => {
     } catch (error) {
       console.error('Error fetching return data:', error.message);
     } finally {
-      // Remove the refreshing state here if needed
+      setRefreshing(false); // Stop refreshing
     }
   };
 
   useEffect(() => {
     fetchReturnData();
   }, []); // No need for refreshing in the dependency array
+
   useFocusEffect(
     React.useCallback(() => {
       fetchReturnData();
@@ -61,6 +70,10 @@ const ReturnScreen = ({ userData }) => {
 
   const returnLaptopHandler = async () => {
     try {
+      // Disable the Return button to prevent spamming
+      setReturnButtonDisabled(true);
+      setLoading(true);
+
       const { data: laptopData, error: laptopError } = await supabase
         .from('LaptopBorrowed')
         .select('*')
@@ -143,6 +156,10 @@ const ReturnScreen = ({ userData }) => {
       }
     } catch (error) {
       console.error('Error returning laptop:', error.message);
+    } finally {
+      // Ensure the Return button is re-enabled even in case of an error
+      setReturnButtonDisabled(false);
+      setLoading(false);
     }
   };
 
@@ -204,71 +221,79 @@ const ReturnScreen = ({ userData }) => {
   });
 
   return (
-    <View>
-      <List.Section>
-        {returnData.map((item) => (
-          <TouchableRipple
-            key={item.Laptop_ID}
-            onPress={() => handleItemPress(item)}
-          >
-            <List.Item
-              title={item.Laptop_Name}
-              description={item.Laptop_Description}
-              left={(props) => <List.Icon {...props} icon='laptop' />}
-            />
-          </TouchableRipple>
-        ))}
-      </List.Section>
-
-      <Modal visible={modalVisible} onRequestClose={closeModal}>
-        <ScrollView>
-          <View style={styles.modalContent}>
-            <Title>{selectedItem?.Laptop_Name}</Title>
-
-            {/* Placeholder for Image Frame */}
-            <View style={styles.imageFrame} />
-
-            <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
-            <InfoRow label='Name' value={selectedItem?.Laptop_Name} />
-
-            <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
-            <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
-            <InfoRow
-              label='Borrow Date'
-              value={formatDate(selectedItem?.Laptop_BorrowDate)}
-            />
-
-            {/* Placeholder for Return Button */}
-            <Button
-              mode='outlined'
-              onPress={returnLaptopHandler}
-              style={styles.returnButton}
+    <ScrollView
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={fetchReturnData} />
+      }
+    >
+      <View>
+        <List.Section>
+          {returnData.map((item) => (
+            <TouchableRipple
+              key={item.Laptop_ID}
+              onPress={() => handleItemPress(item)}
             >
-              Return
-            </Button>
+              <List.Item
+                title={item.Laptop_Name}
+                description={item.Laptop_Description}
+                left={(props) => <List.Icon {...props} icon='laptop' />}
+              />
+            </TouchableRipple>
+          ))}
+        </List.Section>
 
-            {/* Add more fields as needed */}
-            <Button onPress={closeModal} style={styles.closeButton}>
-              Close
-            </Button>
-          </View>
-        </ScrollView>
-      </Modal>
+        <Modal visible={modalVisible} onRequestClose={closeModal}>
+          <ScrollView>
+            <View style={styles.modalContent}>
+              <Title>{selectedItem?.Laptop_Name}</Title>
 
-      <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
-        <ScrollView>
-          <View style={styles.successModalContent}>
-            <Title>Success</Title>
-            <Paragraph style={styles.successModalText}>
-              Laptop returned successfully!
-            </Paragraph>
-            <Button onPress={closeSuccessModal} style={styles.closeButton}>
-              Close
-            </Button>
-          </View>
-        </ScrollView>
-      </Modal>
-    </View>
+              {/* Placeholder for Image Frame */}
+              <View style={styles.imageFrame} />
+
+              <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
+              <InfoRow label='Name' value={selectedItem?.Laptop_Name} />
+
+              <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
+              <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
+              <InfoRow
+                label='Borrow Date'
+                value={formatDate(selectedItem?.Laptop_BorrowDate)}
+              />
+
+              {/* Return Button with loading and disabled props */}
+              <Button
+                mode='outlined'
+                onPress={returnLaptopHandler}
+                style={styles.returnButton}
+                disabled={returnButtonDisabled}
+                loading={loading}
+              >
+                Return
+              </Button>
+
+              {/* Add more fields as needed */}
+              <Button onPress={closeModal} style={styles.closeButton}>
+                Close
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+
+        <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
+          <ScrollView>
+            <View style={styles.successModalContent}>
+              <Title>Success</Title>
+              <Paragraph style={styles.successModalText}>
+                Laptop returned successfully!
+              </Paragraph>
+              <Button onPress={closeSuccessModal} style={styles.closeButton}>
+                Close
+              </Button>
+            </View>
+          </ScrollView>
+        </Modal>
+      </View>
+    </ScrollView>
   );
 };
 

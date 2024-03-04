@@ -15,9 +15,6 @@ const SettingsScreen = ({ setLoggedIn, setSessionUser }) => {
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ color: theme.colors.text, marginBottom: 16 }}>
-        Welcome to Settings!
-      </Text>
       <Button
         mode='contained'
         onPress={handleLogout}

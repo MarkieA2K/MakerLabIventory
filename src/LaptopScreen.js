@@ -22,6 +22,8 @@ const LaptopScreen = ({ userData }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [borrowButtonDisabled, setBorrowButtonDisabled] = useState(false);
+  const [borrowLoading, setBorrowLoading] = useState(false);
 
   const refreshLaptopData = async () => {
     try {
@@ -45,6 +47,10 @@ const LaptopScreen = ({ userData }) => {
 
   const borrowLaptopHandler = async () => {
     try {
+      // Disable the Borrow button to prevent spamming
+      setBorrowButtonDisabled(true);
+      setBorrowLoading(true); // Set loading to true when the operation starts
+
       const currentDate = new Date();
       const formattedDate = currentDate
         .toISOString()
@@ -95,6 +101,10 @@ const LaptopScreen = ({ userData }) => {
       }
     } catch (error) {
       console.error('Error borrowing data:', error.message);
+    } finally {
+      // Ensure the Borrow button is re-enabled even in case of an error
+      setBorrowButtonDisabled(false);
+      setBorrowLoading(false); // Set loading back to false after the operation
     }
   };
 
@@ -177,12 +187,15 @@ const LaptopScreen = ({ userData }) => {
               <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
               <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
 
+              {/* Borrow Button with loading and disabled props */}
               <Button
                 mode='outlined'
                 onPress={borrowLaptopHandler}
                 style={styles.borrowButton}
+                disabled={borrowButtonDisabled}
+                loading={borrowLoading}
               >
-                Borrow
+                {borrowLoading ? 'Borrowing...' : 'Borrow'}
               </Button>
 
               <Button onPress={closeModal} style={styles.closeButton}>
@@ -249,7 +262,7 @@ const styles = StyleSheet.create({
   successModalText: {
     fontSize: 18,
     marginBottom: 10,
-    textAlign: 'center', // Center the text horizontally
+    textAlign: 'center',
   },
 });
 

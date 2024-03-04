@@ -36,11 +36,13 @@ const LaptopLogScreen = ({ navigation }) => {
       console.error('Error fetching log data:', error.message);
     }
   };
+
   useFocusEffect(
     React.useCallback(() => {
       fetchLogData();
     }, [])
   );
+
   const formatDate = (dateString) => {
     const options = {
       year: 'numeric',
@@ -62,9 +64,19 @@ const LaptopLogScreen = ({ navigation }) => {
     setSelectedItem(null);
   };
 
+  const exportToExcel = async () => {
+    // Your logic to export data to Excel or Google Sheets
+    // Add your code here
+  };
+
   return (
-    <ScrollView>
-      <View>
+    <View>
+      {/* Button to export to Excel */}
+      <Button onPress={exportToExcel} style={styles.exportButton}>
+        Export
+      </Button>
+
+      <ScrollView>
         <List.Section>
           {logData.map((item) => (
             <TouchableRipple
@@ -85,36 +97,36 @@ const LaptopLogScreen = ({ navigation }) => {
             </TouchableRipple>
           ))}
         </List.Section>
+      </ScrollView>
 
-        <Modal visible={modalVisible} onRequestClose={closeModal}>
-          <ScrollView>
-            <View style={styles.modalContent}>
-              <Title>{selectedItem?.Laptop_Name}</Title>
+      <Modal visible={modalVisible} onRequestClose={closeModal}>
+        <ScrollView>
+          <View style={styles.modalContent}>
+            <Title>{selectedItem?.Laptop_Name}</Title>
 
-              {/* Placeholder for Image Frame */}
-              <View style={styles.imageFrame} />
-              <InfoRow label='Laptop ID' value={selectedItem?.Laptop_ID} />
+            {/* Placeholder for Image Frame */}
+            <View style={styles.imageFrame} />
+            <InfoRow label='Laptop ID' value={selectedItem?.Laptop_ID} />
 
-              <InfoRow label='User' value={selectedItem?.Laptop_User} />
+            <InfoRow label='User' value={selectedItem?.Laptop_User} />
 
-              <InfoRow
-                label='Borrowed'
-                value={formatDate(selectedItem?.Laptop_SignOut)}
-              />
-              <InfoRow
-                label='Returned'
-                value={formatDate(selectedItem?.Laptop_SignIn)}
-              />
+            <InfoRow
+              label='Borrowed'
+              value={formatDate(selectedItem?.Laptop_SignOut)}
+            />
+            <InfoRow
+              label='Returned'
+              value={formatDate(selectedItem?.Laptop_SignIn)}
+            />
 
-              {/* Add more fields as needed */}
-              <Button onPress={closeModal} style={styles.closeButton}>
-                Close
-              </Button>
-            </View>
-          </ScrollView>
-        </Modal>
-      </View>
-    </ScrollView>
+            {/* Add more fields as needed */}
+            <Button onPress={closeModal} style={styles.closeButton}>
+              Close
+            </Button>
+          </View>
+        </ScrollView>
+      </Modal>
+    </View>
   );
 };
 
@@ -148,6 +160,10 @@ const styles = StyleSheet.create({
   infoValue: {},
   closeButton: {
     marginTop: 8,
+  },
+  exportButton: {
+    marginTop: 16,
+    marginLeft: 16,
   },
 });
 
