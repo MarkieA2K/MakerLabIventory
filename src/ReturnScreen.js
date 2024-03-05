@@ -181,45 +181,6 @@ const ReturnScreen = ({ userData }) => {
     return new Date(dateString).toLocaleString(undefined, options);
   };
 
-  const styles = StyleSheet.create({
-    modalContent: {
-      padding: 16,
-    },
-    imageFrame: {
-      aspectRatio: 1, // Square ratio
-      backgroundColor: '#ddd', // Placeholder color
-      marginBottom: 16,
-    },
-    infoRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 8,
-    },
-    infoLabel: {
-      fontWeight: 'bold',
-    },
-    infoValue: {},
-    returnButton: {
-      marginTop: 16,
-      marginBottom: 8,
-    },
-    closeButton: {
-      marginTop: 8,
-    },
-    // Add or update styles for the success modal content
-    successModalContent: {
-      marginTop: 300,
-      padding: 16,
-      alignItems: 'center', // Center content horizontally
-      justifyContent: 'center', // Center content vertically
-    },
-    successModalText: {
-      fontSize: 18,
-      marginBottom: 10,
-      textAlign: 'center', // Center text within the modal
-    },
-  });
-
   return (
     <ScrollView
       refreshControl={
@@ -228,18 +189,25 @@ const ReturnScreen = ({ userData }) => {
     >
       <View>
         <List.Section>
-          {returnData.map((item) => (
-            <TouchableRipple
-              key={item.Laptop_ID}
-              onPress={() => handleItemPress(item)}
-            >
-              <List.Item
-                title={item.Laptop_Name}
-                description={item.Laptop_Description}
-                left={(props) => <List.Icon {...props} icon='laptop' />}
-              />
-            </TouchableRipple>
-          ))}
+          {returnData.length > 0 ? (
+            returnData.map((item) => (
+              <TouchableRipple
+                key={item.Laptop_ID}
+                onPress={() => handleItemPress(item)}
+              >
+                <List.Item
+                  title={item.Laptop_Name}
+                  description={item.Laptop_Description}
+                  left={(props) => <List.Icon {...props} icon='laptop' />}
+                />
+              </TouchableRipple>
+            ))
+          ) : (
+            <List.Item
+              title='No laptops currently in your possession'
+              description='The list/database is empty or try refreshing.'
+            />
+          )}
         </List.Section>
 
         <Modal visible={modalVisible} onRequestClose={closeModal}>
@@ -280,21 +248,65 @@ const ReturnScreen = ({ userData }) => {
         </Modal>
 
         <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
-          <ScrollView>
-            <View style={styles.successModalContent}>
-              <Title>Success</Title>
-              <Paragraph style={styles.successModalText}>
-                Laptop returned successfully!
+          <View style={styles.successModalContent}>
+            <List.Icon icon='check-circle' color='#4CAF50' size={48} />
+            <Title>Success</Title>
+            <Paragraph style={styles.successModalText}>
+              Laptop returned successfully!
+            </Paragraph>
+
+            <View style={styles.returnDateTime}>
+              <List.Icon icon='calendar' color='#2196F3' size={24} />
+              <Paragraph style={styles.infoValue}>
+                {new Date().toLocaleString()}
               </Paragraph>
-              <Button onPress={closeSuccessModal} style={styles.closeButton}>
-                Close
-              </Button>
             </View>
-          </ScrollView>
+
+            <Button onPress={closeSuccessModal} style={styles.closeButton}>
+              Close
+            </Button>
+          </View>
         </Modal>
       </View>
     </ScrollView>
   );
 };
+const styles = StyleSheet.create({
+  modalContent: {
+    padding: 16,
+  },
+  imageFrame: {
+    aspectRatio: 1,
+    backgroundColor: '#ddd',
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontWeight: 'bold',
+  },
+  infoValue: {},
+  returnButton: {
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  closeButton: {
+    marginTop: 8,
+  },
+  successModalContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  returnDateTime: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+});
 
 export default ReturnScreen;

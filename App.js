@@ -9,15 +9,15 @@ import {
   Portal,
   Modal,
   Button,
+  List,
 } from 'react-native-paper';
 import InventoryScreen from './src/InventoryScreen';
 import SettingsScreen from './src/SettingsScreen';
 import LoginScreen from './src/LoginScreen';
-import LaptopScreen from './src/LaptopScreen'; // Import LaptopScreen
+import LaptopScreen from './src/LaptopScreen';
 import ReturnScreen from './src/ReturnScreen';
 import supabase from './src/supabase';
 import LaptopLogScreen from './src/LaptopLogScreen';
-import { List } from 'react-native-paper'; // Import List from react-native-paper
 
 const Tab = createBottomTabNavigator();
 
@@ -26,7 +26,7 @@ const customTheme = {
   colors: {
     primary: '#689F38', // Light green (adjust the color as needed)
     accent: '#BDBDBD', // Light gray
-    background: '#FFFFFF', // White background
+    background: '#E2E2E2', // White background
     // ... other color settings
   },
 };
@@ -71,6 +71,11 @@ const App = () => {
     setWelcomeModalVisible(false);
   };
 
+  // Function to check admin status based on user data
+  const isAdmin = () => {
+    return userData?.User_Level === 'ADMIN';
+  };
+
   return (
     <PaperProvider theme={customTheme}>
       <NavigationContainer>
@@ -103,19 +108,22 @@ const App = () => {
                 ),
               }}
             />
-            <Tab.Screen
-              name='Log'
-              component={LaptopLogScreen}
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='history' size={size} />
-                ),
-              }}
-            />
+            {isAdmin() && (
+              <Tab.Screen
+                name='Log'
+                component={LaptopLogScreen}
+                options={{
+                  tabBarIcon: ({ color, size }) => (
+                    <List.Icon color={color} icon='history' size={size} />
+                  ),
+                }}
+              />
+            )}
             <Tab.Screen
               name='User'
               children={() => (
                 <SettingsScreen
+                  userData={userData}
                   setLoggedIn={setLoggedIn}
                   setSessionUser={setSessionUser}
                 />

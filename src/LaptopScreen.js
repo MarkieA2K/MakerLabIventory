@@ -57,11 +57,29 @@ const LaptopScreen = ({ userData }) => {
         .slice(0, 19)
         .replace('T', ' ');
 
+      // Fetch User_DisplayName based on User_ID from InventoryUsers
+      const { data: userDisplayData, error: userDisplayError } = await supabase
+        .from('InventoryUsers')
+        .select('User_DisplayName')
+        .eq('User_ID', userData?.User_ID)
+        .single();
+
+      if (userDisplayError) {
+        console.error(
+          'Error fetching user display name:',
+          userDisplayError.message
+        );
+        return;
+      }
+
+      const userDisplayName = userDisplayData?.User_DisplayName;
+
       const { data: borrowData, error: borrowError } = await supabase
         .from('LaptopBorrowed')
         .upsert([
           {
             User_ID: userData?.User_ID,
+            User_DisplayName: userDisplayName,
             Laptop_ID: selectedItem?.Laptop_ID,
             Laptop_Name: selectedItem?.Laptop_Name,
             Laptop_Brand: selectedItem?.Laptop_Brand,
@@ -157,18 +175,25 @@ const LaptopScreen = ({ userData }) => {
     >
       <View>
         <List.Section>
-          {laptopData.map((item) => (
-            <TouchableRipple
-              key={item.Laptop_ID}
-              onPress={() => handleItemPress(item)}
-            >
-              <List.Item
-                title={item.Laptop_Name}
-                description={item.Laptop_Description}
-                left={(props) => <List.Icon {...props} icon='laptop' />}
-              />
-            </TouchableRipple>
-          ))}
+          {laptopData.length > 0 ? (
+            laptopData.map((item) => (
+              <TouchableRipple
+                key={item.Laptop_ID}
+                onPress={() => handleItemPress(item)}
+              >
+                <List.Item
+                  title={item.Laptop_Name}
+                  description={item.Laptop_Description}
+                  left={(props) => <List.Icon {...props} icon='laptop' />}
+                />
+              </TouchableRipple>
+            ))
+          ) : (
+            <List.Item
+              title='No laptops available for use'
+              description='The list/database is empty.'
+            />
+          )}
         </List.Section>
 
         <Modal visible={modalVisible} onRequestClose={closeModal}>
@@ -204,13 +229,20 @@ const LaptopScreen = ({ userData }) => {
             </View>
           </ScrollView>
         </Modal>
-
         <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
           <View style={styles.successModalContent}>
+            <List.Icon icon='check-circle' color='#4CAF50' size={48} />
             <Title>Success</Title>
             <Paragraph style={styles.successModalText}>
               Laptop borrowed successfully!
             </Paragraph>
+
+            <View style={styles.borrowDateTime}>
+              <List.Icon icon='calendar' color='#2196F3' size={24} />
+              <Paragraph style={styles.infoValue}>
+                {new Date().toLocaleString()}
+              </Paragraph>
+            </View>
             <Button onPress={closeSuccessModal} style={styles.closeButton}>
               Close
             </Button>
@@ -250,8 +282,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-  closeButton: {
-    marginTop: 8,
+  borrowDateTime: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   successModalContent: {
     flex: 1,

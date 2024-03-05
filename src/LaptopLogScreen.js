@@ -106,17 +106,27 @@ const LaptopLogScreen = ({ navigation }) => {
 
             {/* Placeholder for Image Frame */}
             <View style={styles.imageFrame} />
-            <InfoRow label='Laptop ID' value={selectedItem?.Laptop_ID} />
+            <InfoRow
+              label='Laptop ID'
+              value={selectedItem?.Laptop_ID}
+              icon='barcode'
+            />
 
-            <InfoRow label='User' value={selectedItem?.Laptop_User} />
+            <InfoRow
+              label='User'
+              value={selectedItem?.Laptop_User}
+              icon='account'
+            />
 
             <InfoRow
               label='Borrowed'
               value={formatDate(selectedItem?.Laptop_SignOut)}
+              icon='calendar'
             />
             <InfoRow
               label='Returned'
               value={formatDate(selectedItem?.Laptop_SignIn)}
+              icon='calendar-check'
             />
 
             {/* Add more fields as needed */}
