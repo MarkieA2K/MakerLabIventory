@@ -190,7 +190,7 @@ const LaptopScreen = ({ userData }) => {
             ))
           ) : (
             <List.Item
-              title='No laptops available for use'
+              title='No equipment available for use'
               description='The list/database is empty.'
             />
           )}
@@ -234,7 +234,7 @@ const LaptopScreen = ({ userData }) => {
             <List.Icon icon='check-circle' color='#4CAF50' size={48} />
             <Title>Success</Title>
             <Paragraph style={styles.successModalText}>
-              Laptop borrowed successfully!
+              Equipment borrowed successfully!
             </Paragraph>
 
             <View style={styles.borrowDateTime}>

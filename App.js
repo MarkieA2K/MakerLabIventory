@@ -24,8 +24,8 @@ const Tab = createBottomTabNavigator();
 const customTheme = {
   ...DefaultTheme,
   colors: {
-    primary: '#689F38', // Light green (adjust the color as needed)
-    accent: '#BDBDBD', // Light gray
+    primary: '#4DA167', // Light green (adjust the color as needed)
+    accent: '#1C0F13', // Light gray
     background: '#E2E2E2', // White background
     // ... other color settings
   },
@@ -82,16 +82,7 @@ const App = () => {
         {loggedIn ? (
           <Tab.Navigator>
             <Tab.Screen
-              name='Inventory'
-              component={InventoryScreen}
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='clipboard' size={size} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name='Laptops'
+              name='Equipment'
               children={() => <LaptopScreen userData={userData} />}
               options={{
                 tabBarIcon: ({ color, size }) => (
@@ -105,6 +96,15 @@ const App = () => {
               options={{
                 tabBarIcon: ({ color, size }) => (
                   <List.Icon color={color} icon='arrow-left' size={size} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name='Inventory'
+              component={InventoryScreen}
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='clipboard' size={size} />
                 ),
               }}
             />

@@ -69,13 +69,23 @@ const LaptopLogScreen = ({ navigation }) => {
     // Add your code here
   };
 
+  // Add the export button to the header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Button
+          onPress={exportToExcel}
+          style={styles.exportButton}
+          labelStyle={styles.exportButtonLabel}
+        >
+          Export
+        </Button>
+      ),
+    });
+  }, [navigation]);
+
   return (
     <View>
-      {/* Button to export to Excel */}
-      <Button onPress={exportToExcel} style={styles.exportButton}>
-        Export
-      </Button>
-
       <ScrollView>
         <List.Section>
           {logData.map((item) => (
@@ -172,8 +182,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   exportButton: {
-    marginTop: 16,
-    marginLeft: 16,
+    marginRight: 16,
+  },
+  exportButtonLabel: {
+    color: '#fff', // Customize the color of the export button text
   },
 });
 
