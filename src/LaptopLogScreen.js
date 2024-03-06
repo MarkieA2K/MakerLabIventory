@@ -10,11 +10,16 @@ import {
 } from 'react-native-paper';
 import supabase from './supabase';
 import { useFocusEffect } from '@react-navigation/native';
-
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import XLSX from 'xlsx';
+import { Alert } from 'react-native';
 const LaptopLogScreen = ({ navigation }) => {
   const [logData, setLogData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchLogData();
@@ -65,8 +70,58 @@ const LaptopLogScreen = ({ navigation }) => {
   };
 
   const exportToExcel = async () => {
-    // Your logic to export data to Excel or Google Sheets
-    // Add your code here
+    try {
+      // Fetch data from Supabase
+      const { data, error } = await supabase
+        .from('InventoryLaptopLog')
+        .select('Laptop_Name, Laptop_User, Laptop_SignOut, Laptop_SignIn');
+
+      if (error) {
+        console.error('Error fetching data:', error);
+        return;
+      }
+
+      // Prepare data for Excel
+      const formattedData = data.map((item) => [
+        item.Laptop_Name,
+        item.Laptop_User,
+        formatDate(item.Laptop_SignOut),
+        formatDate(item.Laptop_SignIn),
+      ]);
+
+      // Create worksheet
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Laptop Name', 'User', 'Sign Out', 'Sign In'],
+        ...formattedData,
+      ]);
+
+      // Create workbook
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'InventoryLaptopLog');
+
+      // Generate a temporary file path
+      const filePath = `${FileSystem.documentDirectory}InventoryLaptopLog.xlsx`;
+
+      // Write the workbook to a file
+      await FileSystem.writeAsStringAsync(
+        filePath,
+        XLSX.write(wb, { bookType: 'xlsx', type: 'base64' }),
+        { encoding: FileSystem.EncodingType.Base64 }
+      );
+
+      // Share the file
+      await Sharing.shareAsync(filePath, {
+        mimeType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        dialogTitle: 'Share Excel File',
+        UTI: 'com.microsoft.excel.xlsx',
+      });
+
+      Alert.alert('Export Successful', 'The data has been exported to Excel.');
+    } catch (error) {
+      console.error('Error exporting data:', error.message);
+      Alert.alert('Export Failed', 'There was an error exporting the data.');
+    }
   };
 
   // Add the export button to the header
@@ -77,6 +132,13 @@ const LaptopLogScreen = ({ navigation }) => {
           onPress={exportToExcel}
           style={styles.exportButton}
           labelStyle={styles.exportButtonLabel}
+          icon={({ color, size }) => (
+            <MaterialCommunityIcons
+              name='file-excel'
+              color={color}
+              size={size}
+            />
+          )}
         >
           Export
         </Button>
@@ -119,6 +181,11 @@ const LaptopLogScreen = ({ navigation }) => {
             <InfoRow
               label='Laptop ID'
               value={selectedItem?.Laptop_ID}
+              icon='barcode'
+            />
+            <InfoRow
+              label='Laptop Name'
+              value={selectedItem?.Laptop_Name}
               icon='barcode'
             />
 
@@ -185,7 +252,7 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   exportButtonLabel: {
-    color: '#fff', // Customize the color of the export button text
+    color: '#3BC14A', // Customize the color of the export button text
   },
 });
 
