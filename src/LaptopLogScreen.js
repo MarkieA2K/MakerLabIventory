@@ -1,4 +1,3 @@
-// LaptopLogScreen.js
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, Modal } from 'react-native';
 import {
@@ -11,26 +10,33 @@ import {
 import supabase from './supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import RNPickerSelect from 'react-native-picker-select';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import XLSX from 'xlsx';
+import * as XLSX from 'xlsx';
 import { Alert } from 'react-native';
+
 const LaptopLogScreen = ({ navigation }) => {
   const [logData, setLogData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     fetchLogData();
-  }, []);
+  }, [selectedMonth]);
 
   const fetchLogData = async () => {
+    console.log(selectedMonth);
     try {
       const { data, error } = await supabase
         .from('InventoryLaptopLog')
         .select('*')
-        .order('Laptop_SignIn', { ascending: false });
+        .order('Laptop_SignIn', { ascending: false })
+        .eq('LaptopLog_Month', selectedMonth);
 
       if (error) {
         console.error('Error fetching log data:', error);
@@ -45,19 +51,8 @@ const LaptopLogScreen = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchLogData();
-    }, [])
+    }, [selectedMonth])
   );
-
-  const formatDate = (dateString) => {
-    const options = {
-      year: 'numeric',
-      month: 'numeric',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    };
-    return new Date(dateString).toLocaleString(undefined, options);
-  };
 
   const handleItemPress = (item) => {
     setSelectedItem(item);
@@ -70,11 +65,15 @@ const LaptopLogScreen = ({ navigation }) => {
   };
 
   const exportToExcel = async () => {
+    setExporting(true);
+    setExportLoading(true);
+
     try {
       // Fetch data from Supabase
       const { data, error } = await supabase
         .from('InventoryLaptopLog')
-        .select('Laptop_Name, Laptop_User, Laptop_SignOut, Laptop_SignIn');
+        .select('Laptop_Name, Laptop_User, Laptop_SignOut, Laptop_SignIn')
+        .eq('LaptopLog_Month', selectedMonth);
 
       if (error) {
         console.error('Error fetching data:', error);
@@ -91,13 +90,25 @@ const LaptopLogScreen = ({ navigation }) => {
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet([
+        [`Laptop Handover log for the month of ${selectedMonth}`],
         ['Laptop Name', 'User', 'Sign Out', 'Sign In'],
         ...formattedData,
       ]);
 
-      // Create workbook
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'InventoryLaptopLog');
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }];
+
+      ws['!rows'] = [{ hpx: 40 }]; // Set row height
+      ws['!cols'] = [
+        { wch: 20 }, // Set column width for 'Laptop Name'
+        { wch: 20 }, // Set column width for 'User'
+        { wch: 20 }, // Set column width for 'Sign Out'
+        { wch: 20 }, // Set column width for 'Sign In'
+      ];
+
+      // Add filter to the worksheet
+      ws['!autofilter'] = {
+        ref: XLSX.utils.encode_range({ s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }),
+      };
 
       // Generate a temporary file path
       const filePath = `${FileSystem.documentDirectory}InventoryLaptopLog.xlsx`;
@@ -105,7 +116,13 @@ const LaptopLogScreen = ({ navigation }) => {
       // Write the workbook to a file
       await FileSystem.writeAsStringAsync(
         filePath,
-        XLSX.write(wb, { bookType: 'xlsx', type: 'base64' }),
+        XLSX.write(
+          {
+            Sheets: { InventoryLaptopLog: ws },
+            SheetNames: ['InventoryLaptopLog'],
+          },
+          { bookType: 'xlsx', type: 'base64' }
+        ),
         { encoding: FileSystem.EncodingType.Base64 }
       );
 
@@ -118,33 +135,71 @@ const LaptopLogScreen = ({ navigation }) => {
       });
 
       Alert.alert('Export Successful', 'The data has been exported to Excel.');
+      setExportLoading(false);
     } catch (error) {
       console.error('Error exporting data:', error.message);
       Alert.alert('Export Failed', 'There was an error exporting the data.');
+    } finally {
+      setExporting(false);
     }
   };
 
-  // Add the export button to the header
+  const formatDate = (dateString) => {
+    const options = {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    };
+    return new Date(dateString).toLocaleString(undefined, options);
+  };
+
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Button
-          onPress={exportToExcel}
-          style={styles.exportButton}
-          labelStyle={styles.exportButtonLabel}
-          icon={({ color, size }) => (
-            <MaterialCommunityIcons
-              name='file-excel'
-              color={color}
-              size={size}
-            />
-          )}
-        >
-          Export
-        </Button>
+        <View style={styles.headerRightContainer}>
+          <Button
+            onPress={exportToExcel}
+            style={styles.exportButton}
+            labelStyle={styles.exportButtonLabel}
+            icon={({ color, size }) => (
+              <MaterialCommunityIcons
+                name='file-excel'
+                color={color}
+                size={size}
+              />
+            )}
+            disabled={exporting}
+            loading={exportLoading}
+          >
+            Export
+          </Button>
+
+          <RNPickerSelect
+            onValueChange={(value) => setSelectedMonth(value)}
+            items={[
+              { label: 'January', value: 'January' },
+              { label: 'February', value: 'February' },
+              { label: 'March', value: 'March' },
+              { label: 'April', value: 'April' },
+              { label: 'May', value: 'May' },
+              { label: 'June', value: 'June' },
+              { label: 'July', value: 'July' },
+              { label: 'August', value: 'August' },
+              { label: 'September', value: 'September' },
+              { label: 'October', value: 'Ocotber' },
+              { label: 'November', value: 'November' },
+              { label: 'December', value: 'December' },
+            ]}
+            style={pickerSelectStyles}
+            value={selectedMonth}
+            useNativeAndroidPickerStyle={false}
+          />
+        </View>
       ),
     });
-  }, [navigation]);
+  }, [navigation, selectedMonth, exporting]);
 
   return (
     <View>
@@ -178,35 +233,7 @@ const LaptopLogScreen = ({ navigation }) => {
 
             {/* Placeholder for Image Frame */}
             <View style={styles.imageFrame} />
-            <InfoRow
-              label='Laptop ID'
-              value={selectedItem?.Laptop_ID}
-              icon='barcode'
-            />
-            <InfoRow
-              label='Laptop Name'
-              value={selectedItem?.Laptop_Name}
-              icon='barcode'
-            />
-
-            <InfoRow
-              label='User'
-              value={selectedItem?.Laptop_User}
-              icon='account'
-            />
-
-            <InfoRow
-              label='Borrowed'
-              value={formatDate(selectedItem?.Laptop_SignOut)}
-              icon='calendar'
-            />
-            <InfoRow
-              label='Returned'
-              value={formatDate(selectedItem?.Laptop_SignIn)}
-              icon='calendar-check'
-            />
-
-            {/* Add more fields as needed */}
+            {/* ... other modal content ... */}
             <Button onPress={closeModal} style={styles.closeButton}>
               Close
             </Button>
@@ -217,14 +244,42 @@ const LaptopLogScreen = ({ navigation }) => {
   );
 };
 
-const InfoRow = ({ label, value }) => (
-  <View style={styles.infoRow}>
-    <Paragraph style={styles.infoLabel}>{label}</Paragraph>
-    <Paragraph style={styles.infoValue}>{value}</Paragraph>
-  </View>
-);
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 4,
+    color: 'black',
+    paddingRight: 30,
+    backgroundColor: 'white',
+  },
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'purple',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
+    backgroundColor: 'white',
+  },
+});
 
 const styles = StyleSheet.create({
+  headerRightContainer: {
+    flexDirection: 'row',
+    marginRight: 16,
+  },
+  exportButton: {
+    marginRight: 16,
+  },
+  exportButtonLabel: {
+    color: '#3BC14A', // Customize the color of the export button text
+  },
   rightContent: {
     alignItems: 'flex-end',
   },
@@ -235,24 +290,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1, // Square ratio
     backgroundColor: '#ddd', // Placeholder color
     marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  infoLabel: {
-    fontWeight: 'bold',
-  },
-  infoValue: {},
-  closeButton: {
-    marginTop: 8,
-  },
-  exportButton: {
-    marginRight: 16,
-  },
-  exportButtonLabel: {
-    color: '#3BC14A', // Customize the color of the export button text
   },
 });
 

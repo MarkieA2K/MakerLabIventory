@@ -97,15 +97,21 @@ const ReturnScreen = ({ userData }) => {
         return;
       }
 
+      const currentDate = new Date();
+      const currentMonthName = new Intl.DateTimeFormat('en-US', {
+        month: 'long',
+      }).format(currentDate);
+
       const { data: logData, error: logError } = await supabase
         .from('InventoryLaptopLog')
         .upsert([
           {
             Laptop_ID: selectedItem?.Laptop_ID,
             Laptop_Name: selectedLaptop?.Laptop_Name,
-            Laptop_User: userData[0]?.User_DisplayName, // Use User_GivenName from userData
+            Laptop_User: userData[0]?.User_DisplayName,
             Laptop_SignOut: selectedLaptop?.Laptop_BorrowDate,
-            Laptop_SignIn: new Date().toISOString(),
+            Laptop_SignIn: currentDate.toISOString(),
+            LaptopLog_Month: currentMonthName, // Store the month name in LaptopLog_Month
           },
         ]);
 
