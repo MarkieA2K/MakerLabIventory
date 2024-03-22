@@ -1,16 +1,26 @@
-// SettingsScreen.js
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { useTheme, Button, Avatar } from 'react-native-paper';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { useTheme, Button, Avatar, Modal, Portal } from 'react-native-paper';
 
 const SettingsScreen = ({ setLoggedIn, setSessionUser, userData }) => {
   const theme = useTheme();
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
   const handleLogout = () => {
+    // Show confirmation modal before logging out
+    setConfirmModalVisible(true);
+  };
+
+  const confirmLogout = () => {
     // Implement your logout logic here
     // For simplicity, set loggedIn to false
     setLoggedIn(false);
     setSessionUser('');
+    setConfirmModalVisible(false);
+  };
+
+  const cancelLogout = () => {
+    setConfirmModalVisible(false);
   };
 
   return (
@@ -32,6 +42,7 @@ const SettingsScreen = ({ setLoggedIn, setSessionUser, userData }) => {
           </View>
         )}
       </View>
+
       <Button
         mode='contained'
         onPress={handleLogout}
@@ -40,6 +51,23 @@ const SettingsScreen = ({ setLoggedIn, setSessionUser, userData }) => {
       >
         Logout
       </Button>
+
+      {/* Confirmation Modal */}
+      <Portal>
+        <Modal
+          visible={confirmModalVisible}
+          onDismiss={() => setConfirmModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Text style={styles.confirmText}>
+            Are you sure you want to logout?
+          </Text>
+          <View style={styles.modalButtons}>
+            <Button onPress={cancelLogout}>Cancel</Button>
+            <Button onPress={confirmLogout}>Logout</Button>
+          </View>
+        </Modal>
+      </Portal>
     </View>
   );
 };
@@ -66,6 +94,21 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: 20,
+  },
+  // Modal styles
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 8,
+  },
+  confirmText: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
 });
 

@@ -12,11 +12,12 @@ import {
   Paragraph,
   TouchableRipple,
   Button,
+  FAB,
 } from 'react-native-paper';
 import supabase from './supabase';
 import { useFocusEffect } from '@react-navigation/native';
 
-const LaptopScreen = ({ userData }) => {
+const LaptopScreen = ({ navigation, userData }) => {
   const [laptopData, setLaptopData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -24,6 +25,36 @@ const LaptopScreen = ({ userData }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [borrowButtonDisabled, setBorrowButtonDisabled] = useState(false);
   const [borrowLoading, setBorrowLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const isAdmin = () => {
+    return userData?.User_Level === 'ADMIN';
+  };
+
+  const isOJT = () => {
+    return userData?.User_Level === 'OJT';
+  };
+
+  const fetchLaptopData = async () => {
+    try {
+      let query = supabase
+        .from('InventoryLaptopList')
+        .select('*')
+        .not('Laptop_Quantity', 'eq', 0);
+      if (selectedCategory) {
+        query = query.eq('Category', selectedCategory);
+      }
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching laptop data:', error);
+      } else {
+        setLaptopData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching laptop data:', error.message);
+    }
+  };
 
   const refreshLaptopData = async () => {
     try {
@@ -84,6 +115,7 @@ const LaptopScreen = ({ userData }) => {
             Laptop_Name: selectedItem?.Laptop_Name,
             Laptop_Brand: selectedItem?.Laptop_Brand,
             Laptop_Model: selectedItem?.Laptop_Model,
+            Category: selectedItem?.Category,
             Laptop_BorrowDate: formattedDate,
           },
         ]);
@@ -102,6 +134,7 @@ const LaptopScreen = ({ userData }) => {
                 Laptop_Name: selectedItem?.Laptop_Name,
                 Laptop_Brand: selectedItem?.Laptop_Brand,
                 Laptop_Model: selectedItem?.Laptop_Model,
+                Category: selectedItem?.Category,
                 Laptop_Quantity: 0,
               },
             ],
@@ -126,20 +159,84 @@ const LaptopScreen = ({ userData }) => {
     }
   };
 
-  const fetchLaptopData = async () => {
+  const requestLaptopHandler = async () => {
     try {
-      const { data, error } = await supabase
-        .from('InventoryLaptopList')
-        .select('*')
-        .not('Laptop_Quantity', 'eq', 0);
+      setBorrowButtonDisabled(true);
+      setBorrowLoading(true);
+      const currentDate = new Date();
+      const formattedDate = currentDate
+        .toISOString()
+        .slice(0, 19)
+        .replace('T', ' ');
 
-      if (error) {
-        console.error('Error fetching laptop data:', error);
+      const { data: userDisplayData, error: userDisplayError } = await supabase
+        .from('InventoryUsers')
+        .select('User_DisplayName')
+        .eq('User_ID', userData?.User_ID)
+        .single();
+
+      if (userDisplayError) {
+        console.error(
+          'Error fetching user display name:',
+          userDisplayError.message
+        );
+      }
+
+      const userDisplayName = userDisplayData?.User_DisplayName;
+
+      const { data: requestData, error: requestError } = await supabase
+        .from('InventoryRequest')
+        .upsert([
+          {
+            User_ID: userData?.User_ID,
+            User_DisplayName: userDisplayName,
+            Laptop_ID: selectedItem?.Laptop_ID,
+            Laptop_Name: selectedItem?.Laptop_Name,
+            Laptop_Model: selectedItem?.Laptop_Model,
+            Laptop_Brand: selectedItem?.Laptop_Brand,
+            Category: selectedItem?.Category,
+
+            Request_Date: formattedDate,
+          },
+        ]);
+
+      if (requestError) {
+        console.error('Error requesting data:', requestError.message);
       } else {
-        setLaptopData(data);
+        console.log('Data requested successfully:', requestData);
+
+        const { data: updateData, error: updateError } = await supabase
+          .from('InventoryLaptopList')
+          .upsert(
+            [
+              {
+                Laptop_ID: selectedItem?.Laptop_ID,
+                Laptop_Name: selectedItem?.Laptop_Name,
+                Laptop_Brand: selectedItem?.Laptop_Brand,
+                Laptop_Model: selectedItem?.Laptop_Model,
+                Category: selectedItem?.Category,
+                Laptop_Quantity: 0,
+              },
+            ],
+            { onConflict: ['Laptop_ID'] }
+          );
+
+        if (updateError) {
+          console.error('Error updating quantity:', updateError.message);
+        } else {
+          console.log('Quantity updated successfully:', updateData);
+          setModalVisible(false);
+          setSuccessModalVisible(true);
+          refreshLaptopData();
+          setBorrowButtonDisabled(false);
+          setBorrowLoading(false);
+        }
       }
     } catch (error) {
-      console.error('Error fetching laptop data:', error.message);
+      console.error('Error requesting data:', error.message);
+    } finally {
+      setBorrowButtonDisabled(false);
+      setBorrowLoading(false);
     }
   };
 
@@ -150,7 +247,7 @@ const LaptopScreen = ({ userData }) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchLaptopData();
-    }, [])
+    }, [selectedCategory])
   );
 
   const handleItemPress = (item) => {
@@ -166,90 +263,164 @@ const LaptopScreen = ({ userData }) => {
   const closeSuccessModal = () => {
     setSuccessModalVisible(false);
   };
+  // React.useLayoutEffect(() => {
+  //   navigation.setOptions({
+  //     headerRight: () => (
+  //       <View>
+  //         <RNPickerSelect
+  //           onValueChange={(value) => setSelectedCategory(value)}
+  //           items={[
+  //             { label: 'All Categories', value: null },
+  //             { label: 'Laptop', value: 'Laptop' },
+  //             { label: 'Headphones', value: 'Headphones' },
+  //             // Add more categories as neededYYY
+  //           ]}
+  //           placeholder={{ label: 'Select a category', value: null }}
+  //           style={pickerSelectStyles}
+  //           useNativeAndroidPickerStyle={false}
+  //         />
+  //       </View>
+  //     ),
+  //   });
+  // }, [navigation, selectedCategory]);
+
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'Laptop':
+        return 'laptop';
+      case 'Headphones':
+        return 'headphones';
+      // Add more cases for other categories and their corresponding icons
+      default:
+        return 'help'; // Default icon if category is not recognized
+    }
+  };
 
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={refreshLaptopData} />
-      }
-    >
-      <View>
-        <List.Section>
-          {laptopData.length > 0 ? (
-            laptopData.map((item) => (
-              <TouchableRipple
-                key={item.Laptop_ID}
-                onPress={() => handleItemPress(item)}
-              >
-                <List.Item
-                  title={item.Laptop_Name}
-                  description={item.Laptop_Description}
-                  left={(props) => <List.Icon {...props} icon='laptop' />}
-                />
-              </TouchableRipple>
-            ))
-          ) : (
-            <List.Item
-              title='No equipment available for use'
-              description='The list/database is empty.'
-            />
-          )}
-        </List.Section>
-
-        <Modal visible={modalVisible} onRequestClose={closeModal}>
-          <ScrollView>
-            <View style={styles.modalContent}>
-              <Title>{selectedItem?.Laptop_Name}</Title>
-
-              <View style={styles.imageFrame} />
-
-              <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
-              <InfoRow label='Name' value={selectedItem?.Laptop_Name} />
-              <InfoRow
-                label='Description'
-                value={selectedItem?.Laptop_Description}
+    <View style={styles.flexview}>
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshLaptopData}
+          />
+        }
+      >
+        <View>
+          <List.Section>
+            {laptopData.length > 0 ? (
+              laptopData.map((item) => (
+                <TouchableRipple
+                  key={item.Laptop_ID}
+                  onPress={() => handleItemPress(item)}
+                >
+                  <List.Item
+                    title={item.Laptop_Name}
+                    description={item.Laptop_Description}
+                    left={(props) => (
+                      <List.Icon
+                        {...props}
+                        icon={getCategoryIcon(item.Category)}
+                      />
+                    )}
+                    style={styles.listItem}
+                    descriptionStyle={styles.description}
+                  />
+                </TouchableRipple>
+              ))
+            ) : (
+              <List.Item
+                title='No equipment available for use'
+                description='The list/database is empty.'
+                style={styles.emptyList}
+                descriptionStyle={styles.emptyDescription}
               />
-              <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
-              <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
+            )}
+          </List.Section>
 
-              {/* Borrow Button with loading and disabled props */}
-              <Button
-                mode='outlined'
-                onPress={borrowLaptopHandler}
-                style={styles.borrowButton}
-                disabled={borrowButtonDisabled}
-                loading={borrowLoading}
-              >
-                {borrowLoading ? 'Borrowing...' : 'Borrow'}
-              </Button>
+          <Modal visible={modalVisible} onRequestClose={closeModal}>
+            <ScrollView>
+              <View style={styles.modalContent}>
+                <Title>{selectedItem?.Laptop_Name}</Title>
 
-              <Button onPress={closeModal} style={styles.closeButton}>
+                <View style={styles.imageFrame} />
+
+                <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
+                <InfoRow label='Name' value={selectedItem?.Laptop_Name} />
+                <InfoRow
+                  label='Description'
+                  value={selectedItem?.Laptop_Description}
+                />
+                <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
+                <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
+
+                {/* Borrow Button with loading and disabled props */}
+                {isAdmin() && (
+                  <Button
+                    mode='outlined'
+                    onPress={borrowLaptopHandler}
+                    style={styles.borrowButton}
+                    disabled={borrowButtonDisabled}
+                    loading={borrowLoading}
+                  >
+                    Borrow
+                  </Button>
+                )}
+                {isOJT() && (
+                  <Button
+                    mode='outlined'
+                    onPress={requestLaptopHandler}
+                    style={styles.borrowButton}
+                    disabled={borrowButtonDisabled}
+                    loading={borrowLoading}
+                  >
+                    Request
+                  </Button>
+                )}
+
+                <Button
+                  mode='outlined'
+                  onPress={closeModal}
+                  style={styles.closeButton}
+                >
+                  Close
+                </Button>
+              </View>
+            </ScrollView>
+          </Modal>
+          <Modal
+            visible={successModalVisible}
+            onRequestClose={closeSuccessModal}
+          >
+            <View style={styles.successModalContent}>
+              <List.Icon icon='check-circle' color='#4CAF50' size={48} />
+              <Title>Success</Title>
+              {isAdmin() && (
+                <Paragraph style={styles.successModalText}>
+                  Equipment borrowed successfully!
+                </Paragraph>
+              )}
+              {isOJT() && (
+                <Paragraph style={styles.successModalText}>
+                  Equipment Requested successfully!
+                </Paragraph>
+              )}
+
+              <View style={styles.borrowDateTime}>
+                <List.Icon icon='calendar' color='#2196F3' size={24} />
+                <Paragraph style={styles.infoValue}>
+                  {new Date().toLocaleString()}
+                </Paragraph>
+              </View>
+              <Button onPress={closeSuccessModal} style={styles.closeButton}>
                 Close
               </Button>
             </View>
-          </ScrollView>
-        </Modal>
-        <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
-          <View style={styles.successModalContent}>
-            <List.Icon icon='check-circle' color='#4CAF50' size={48} />
-            <Title>Success</Title>
-            <Paragraph style={styles.successModalText}>
-              Equipment borrowed successfully!
-            </Paragraph>
-
-            <View style={styles.borrowDateTime}>
-              <List.Icon icon='calendar' color='#2196F3' size={24} />
-              <Paragraph style={styles.infoValue}>
-                {new Date().toLocaleString()}
-              </Paragraph>
-            </View>
-            <Button onPress={closeSuccessModal} style={styles.closeButton}>
-              Close
-            </Button>
-          </View>
-        </Modal>
-      </View>
-    </ScrollView>
+          </Modal>
+        </View>
+      </ScrollView>
+      <FAB style={styles.fab} icon='plus' />
+    </View>
   );
 };
 
@@ -261,6 +432,39 @@ const InfoRow = ({ label, value }) => (
 );
 
 const styles = StyleSheet.create({
+  flexview: {
+    flex: 1,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
+  listItem: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingHorizontal: 10,
+    margin: 1,
+
+    backgroundColor: '#f5f5f5', // Adjust the background color here
+    borderRadius: 10,
+  },
+  description: {
+    color: '#888',
+    marginTop: 5,
+  },
+  emptyList: {
+    paddingHorizontal: 10,
+    paddingVertical: 15,
+    backgroundColor: '#f5f5f5', // Adjust the background color here
+  },
+  emptyDescription: {
+    fontStyle: 'italic',
+    color: '#888',
+    marginTop: 5,
+  },
+
   modalContent: {
     padding: 16,
   },
@@ -297,6 +501,19 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 10,
     textAlign: 'center',
+  },
+});
+
+const pickerSelectStyles = StyleSheet.create({
+  inputAndroid: {
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'gray',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30, // to ensure the text is never behind the icon
   },
 });
 

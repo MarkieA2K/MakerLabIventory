@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import { TextInput, Button, Title, useTheme } from 'react-native-paper';
 import supabase from './supabase'; // Import your Supabase client instance
 
@@ -10,11 +10,12 @@ const LoginScreen = ({ setLoggedIn, setUserSession }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async () => {
     // Check if either username or password is blank
     if (!username || !password) {
-      Alert.alert('Error', 'Username and password cannot be empty.');
+      setError('Username and password cannot be empty.');
       return;
     }
 
@@ -29,39 +30,32 @@ const LoginScreen = ({ setLoggedIn, setUserSession }) => {
         .single();
 
       if (error) {
-        console.error('Error fetching user data:', error);
-        Alert.alert('Error', 'Invalid credentials. Please try again.');
+        console.log('Error fetching user data:', error);
+        setError('Invalid credentials. Please try again.');
       } else if (data && data.User_ID !== '') {
         setLoggedIn(true);
         setUserSession(data.User_ID); // Convert User_ID to string
       } else {
-        Alert.alert('Error', 'Invalid credentials. Please try again.');
+        setError('Invalid credentials. Please try again.');
       }
     } catch (error) {
       console.error('Error during login:', error.message);
+      setError('An unexpected error occurred. Please try again later.');
     } finally {
       setLoading(false); // Set loading back to false after the login process
     }
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <Title style={[styles.title, { color: theme.colors.text }]}>
-        A2K Inventory
-      </Title>
+    <View style={styles.container}>
+      <Title style={styles.title}>A2K Equipment Handover</Title>
       <View style={styles.formContainer}>
         <TextInput
+          mode='flat'
           label='Username'
           value={username}
           onChangeText={(text) => setUsername(text)}
           style={styles.input}
-          theme={{
-            colors: {
-              primary: theme.colors.text,
-            },
-          }}
         />
         <TextInput
           label='Password'
@@ -69,11 +63,6 @@ const LoginScreen = ({ setLoggedIn, setUserSession }) => {
           onChangeText={(text) => setPassword(text)}
           secureTextEntry={!showPassword}
           style={styles.input}
-          theme={{
-            colors: {
-              primary: theme.colors.text,
-            },
-          }}
           right={
             <TextInput.Icon
               icon={showPassword ? 'eye-off' : 'eye'}
@@ -81,11 +70,11 @@ const LoginScreen = ({ setLoggedIn, setUserSession }) => {
             />
           }
         />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
           mode='contained'
           onPress={handleLogin}
           style={styles.loginButton}
-          theme={{ colors: { primary: theme.colors.primary } }}
           disabled={loading} // Disable the button when loading is true
           loading={loading} // Show loading indicator when loading is true
         >
@@ -101,16 +90,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5F5F5', // Background color of the container
   },
   title: {
     fontSize: 24,
-    marginBottom: 16,
+    marginBottom: 24,
+    color: '#333', // Title color
   },
   formContainer: {
     width: '80%',
-    padding: 16,
+    padding: 20,
     borderRadius: 8,
     elevation: 4,
+    backgroundColor: '#FFF', // Background color of the form container
   },
   input: {
     marginBottom: 16,
@@ -118,9 +110,14 @@ const styles = StyleSheet.create({
     borderColor: '#BDC3C7',
     borderRadius: 4,
     paddingHorizontal: 12,
+    backgroundColor: 'white',
   },
   loginButton: {
     marginTop: 16,
+  },
+  error: {
+    color: 'red',
+    marginBottom: 16,
   },
 });
 

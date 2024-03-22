@@ -101,6 +101,8 @@ const ReturnScreen = ({ userData }) => {
       const currentMonthName = new Intl.DateTimeFormat('en-US', {
         month: 'long',
       }).format(currentDate);
+      const currentYear = currentDate.getFullYear(); // Get the current year as a number
+      const currentYearString = currentYear.toString(); // Convert the year to a string
 
       const { data: logData, error: logError } = await supabase
         .from('InventoryLaptopLog')
@@ -111,7 +113,9 @@ const ReturnScreen = ({ userData }) => {
             Laptop_User: userData[0]?.User_DisplayName,
             Laptop_SignOut: selectedLaptop?.Laptop_BorrowDate,
             Laptop_SignIn: currentDate.toISOString(),
+            Category: selectedLaptop?.Category,
             LaptopLog_Month: currentMonthName, // Store the month name in LaptopLog_Month
+            LaptopLog_Year: currentYearString, // Store the year as a string in LaptopLog_Year
           },
         ]);
 
@@ -141,6 +145,7 @@ const ReturnScreen = ({ userData }) => {
                   Laptop_Name: selectedItem?.Laptop_Name,
                   Laptop_Brand: selectedItem?.Laptop_Brand,
                   Laptop_Model: selectedItem?.Laptop_Model,
+                  Category: selectedLaptop?.Category,
                   Laptop_Quantity: 1,
                 },
               ],
@@ -187,6 +192,18 @@ const ReturnScreen = ({ userData }) => {
     return new Date(dateString).toLocaleString(undefined, options);
   };
 
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'Laptop':
+        return 'laptop';
+      case 'Headphones':
+        return 'headphones';
+      // Add more cases for other categories and their corresponding icons
+      default:
+        return 'help'; // Default icon if category is not recognized
+    }
+  };
+
   return (
     <ScrollView
       refreshControl={
@@ -204,7 +221,14 @@ const ReturnScreen = ({ userData }) => {
                 <List.Item
                   title={item.Laptop_Name}
                   description={item.Laptop_Description}
-                  left={(props) => <List.Icon {...props} icon='laptop' />}
+                  left={(props) => (
+                    <List.Icon
+                      {...props}
+                      icon={getCategoryIcon(item.Category)}
+                    />
+                  )}
+                  style={styles.listItem}
+                  descriptionStyle={styles.description}
                 />
               </TouchableRipple>
             ))
@@ -212,6 +236,8 @@ const ReturnScreen = ({ userData }) => {
             <List.Item
               title='No laptops currently in your possession'
               description='The list/database is empty or try refreshing.'
+              style={styles.emptyList}
+              descriptionStyle={styles.emptyDescription}
             />
           )}
         </List.Section>
@@ -246,7 +272,11 @@ const ReturnScreen = ({ userData }) => {
               </Button>
 
               {/* Add more fields as needed */}
-              <Button onPress={closeModal} style={styles.closeButton}>
+              <Button
+                onPress={closeModal}
+                style={styles.closeButton}
+                mode='outlined'
+              >
                 Close
               </Button>
             </View>
@@ -278,6 +308,30 @@ const ReturnScreen = ({ userData }) => {
   );
 };
 const styles = StyleSheet.create({
+  listItem: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingHorizontal: 10,
+    margin: 1,
+
+    backgroundColor: '#f5f5f5', // Adjust the background color here
+    borderRadius: 10,
+  },
+  description: {
+    color: '#888',
+    marginTop: 5,
+  },
+  emptyList: {
+    paddingHorizontal: 10,
+    paddingVertical: 15,
+    backgroundColor: '#f5f5f5', // Adjust the background color here
+  },
+  emptyDescription: {
+    fontStyle: 'italic',
+    color: '#888',
+    marginTop: 5,
+  },
+
   modalContent: {
     padding: 16,
   },

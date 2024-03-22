@@ -5,11 +5,12 @@ import {
   Title,
   Paragraph,
   TouchableRipple,
+  FAB,
   Button,
 } from 'react-native-paper';
 import supabase from './supabase';
 import { useFocusEffect } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Entypo } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -21,22 +22,23 @@ const LaptopLogScreen = ({ navigation }) => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+
+  // State variables for month and year
+  const [selectedMonth, setSelectedMonth] = useState('January');
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear().toString()
+  );
 
   const [exportLoading, setExportLoading] = useState(false);
 
-  useEffect(() => {
-    fetchLogData();
-  }, [selectedMonth]);
-
   const fetchLogData = async () => {
-    console.log(selectedMonth);
     try {
       const { data, error } = await supabase
         .from('InventoryLaptopLog')
         .select('*')
         .order('Laptop_SignIn', { ascending: false })
-        .eq('LaptopLog_Month', selectedMonth);
+        .eq('LaptopLog_Month', selectedMonth)
+        .eq('LaptopLog_Year', selectedYear.toString()); // Filter by selected year
 
       if (error) {
         console.error('Error fetching log data:', error);
@@ -51,7 +53,7 @@ const LaptopLogScreen = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchLogData();
-    }, [selectedMonth])
+    }, [selectedMonth, selectedYear])
   );
 
   const handleItemPress = (item) => {
@@ -63,7 +65,6 @@ const LaptopLogScreen = ({ navigation }) => {
     setModalVisible(false);
     setSelectedItem(null);
   };
-
   const exportToExcel = async () => {
     setExporting(true);
     setExportLoading(true);
@@ -73,7 +74,8 @@ const LaptopLogScreen = ({ navigation }) => {
       const { data, error } = await supabase
         .from('InventoryLaptopLog')
         .select('Laptop_Name, Laptop_User, Laptop_SignOut, Laptop_SignIn')
-        .eq('LaptopLog_Month', selectedMonth);
+        .eq('LaptopLog_Month', selectedMonth)
+        .eq('LaptopLog_Year', selectedYear.toString()); // Filter by selected year
 
       if (error) {
         console.error('Error fetching data:', error);
@@ -90,7 +92,9 @@ const LaptopLogScreen = ({ navigation }) => {
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet([
-        [`Laptop Handover log for the month of ${selectedMonth}`],
+        [
+          `Laptop Handover log for the month of ${selectedMonth} ${selectedYear}`,
+        ],
         ['Laptop Name', 'User', 'Sign Out', 'Sign In'],
         ...formattedData,
       ]);
@@ -159,23 +163,7 @@ const LaptopLogScreen = ({ navigation }) => {
     navigation.setOptions({
       headerRight: () => (
         <View style={styles.headerRightContainer}>
-          <Button
-            onPress={exportToExcel}
-            style={styles.exportButton}
-            labelStyle={styles.exportButtonLabel}
-            icon={({ color, size }) => (
-              <MaterialCommunityIcons
-                name='file-excel'
-                color={color}
-                size={size}
-              />
-            )}
-            disabled={exporting}
-            loading={exportLoading}
-          >
-            Export
-          </Button>
-
+          {/* Month Picker */}
           <RNPickerSelect
             onValueChange={(value) => setSelectedMonth(value)}
             items={[
@@ -188,7 +176,7 @@ const LaptopLogScreen = ({ navigation }) => {
               { label: 'July', value: 'July' },
               { label: 'August', value: 'August' },
               { label: 'September', value: 'September' },
-              { label: 'October', value: 'Ocotber' },
+              { label: 'October', value: 'October' },
               { label: 'November', value: 'November' },
               { label: 'December', value: 'December' },
             ]}
@@ -196,13 +184,46 @@ const LaptopLogScreen = ({ navigation }) => {
             value={selectedMonth}
             useNativeAndroidPickerStyle={false}
           />
+
+          {/* Year Picker */}
+          <RNPickerSelect
+            onValueChange={(value) => setSelectedYear(value)}
+            items={[
+              { label: '2024', value: '2024' },
+              { label: '2025', value: '2025' },
+              { label: '2026', value: '2026' },
+
+              // Add more years as needed
+            ]}
+            style={pickerSelectStyles}
+            value={selectedYear}
+            useNativeAndroidPickerStyle={false}
+          />
         </View>
       ),
     });
-  }, [navigation, selectedMonth, exporting]);
+  }, [navigation, selectedMonth, selectedYear, exporting]);
+
+  const InfoRow = ({ label, value }) => (
+    <View style={styles.infoRow}>
+      <Paragraph style={styles.infoLabel}>{label}</Paragraph>
+      <Paragraph style={styles.infoValue}>{value}</Paragraph>
+    </View>
+  );
+  const getCategoryIcon = (category) => {
+    switch (category) {
+      case 'Laptop':
+        return 'laptop';
+      case 'Headphones':
+        return 'headphones';
+      // Add more cases for other categories and their corresponding icons
+      default:
+        return 'help'; // Default icon if category is not recognized
+    }
+  };
 
   return (
-    <View>
+    <View style={styles.container}>
       <ScrollView>
         <List.Section>
           {logData.map((item) => (
@@ -211,9 +232,13 @@ const LaptopLogScreen = ({ navigation }) => {
               onPress={() => handleItemPress(item)}
             >
               <List.Item
+                style={styles.listItem}
+                descriptionStyle={styles.description}
                 title={item.Laptop_Name}
                 description={`Borrowed by ${item.Laptop_User}`}
-                left={(props) => <List.Icon {...props} icon='laptop' />}
+                left={(props) => (
+                  <List.Icon {...props} icon={getCategoryIcon(item.Category)} />
+                )}
                 right={() => (
                   <View style={styles.rightContent}>
                     <Paragraph>{formatDate(item.Laptop_SignOut)}</Paragraph>
@@ -233,13 +258,39 @@ const LaptopLogScreen = ({ navigation }) => {
 
             {/* Placeholder for Image Frame */}
             <View style={styles.imageFrame} />
-            {/* ... other modal content ... */}
+
+            {/* Additional Information */}
+            <InfoRow label='Laptop ID' value={selectedItem?.Laptop_ID} />
+            <InfoRow label='User' value={selectedItem?.Laptop_User} />
+            <InfoRow
+              label='Borrowed'
+              value={formatDate(selectedItem?.Laptop_SignOut)}
+            />
+            <InfoRow
+              label='Returned'
+              value={formatDate(selectedItem?.Laptop_SignIn)}
+            />
+
+            {/* Add more fields as needed */}
+
             <Button onPress={closeModal} style={styles.closeButton}>
               Close
             </Button>
           </View>
         </ScrollView>
       </Modal>
+
+      {/* FAB for exporting to Excel */}
+      <FAB
+        style={styles.fab}
+        icon={({ size, color }) => (
+          <Entypo name='export' size={size} color={color} />
+        )}
+        color='#3BC14A' // Customize the background color of the FAB
+        onPress={exportToExcel}
+        loading={exportLoading}
+        disabled={exporting}
+      />
     </View>
   );
 };
@@ -270,15 +321,25 @@ const pickerSelectStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  listItem: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    paddingHorizontal: 10,
+    margin: 1,
+
+    backgroundColor: '#f5f5f5', // Adjust the background color here
+    borderRadius: 10,
+  },
+  description: {
+    color: '#888',
+    marginTop: 5,
+  },
+  container: {
+    flex: 1,
+  },
   headerRightContainer: {
     flexDirection: 'row',
     marginRight: 16,
-  },
-  exportButton: {
-    marginRight: 16,
-  },
-  exportButtonLabel: {
-    color: '#3BC14A', // Customize the color of the export button text
   },
   rightContent: {
     alignItems: 'flex-end',
@@ -290,6 +351,26 @@ const styles = StyleSheet.create({
     aspectRatio: 1, // Square ratio
     backgroundColor: '#ddd', // Placeholder color
     marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontWeight: 'bold',
+  },
+  infoValue: {},
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#4D5057',
+  },
+  closeButton: {
+    marginTop: 16,
+    marginBottom: 8,
   },
 });
 

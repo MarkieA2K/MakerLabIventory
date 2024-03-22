@@ -11,50 +11,91 @@ import {
   Button,
   List,
 } from 'react-native-paper';
-import InventoryScreen from './src/InventoryScreen';
+
+import { CalendarProvider } from 'react-native-calendars';
 import SettingsScreen from './src/SettingsScreen';
 import LoginScreen from './src/LoginScreen';
 import LaptopScreen from './src/LaptopScreen';
 import ReturnScreen from './src/ReturnScreen';
 import supabase from './src/supabase';
 import LaptopLogScreen from './src/LaptopLogScreen';
+import RequestScreen from './src/RequestScreen';
+import LaptopRequestScreen from './src/LaptopRequestScreen';
+import BookingScreen from './src/BookingScreen';
 
 const Tab = createBottomTabNavigator();
 
 const customTheme = {
   ...DefaultTheme,
   colors: {
-    primary: '#4DA167', // Light green (adjust the color as needed)
-    accent: '#1C0F13', // Light gray
-    background: '#E2E2E2', // White background
-    // ... other color settings
+    ...DefaultTheme.colors,
+    primary: '#606060', // your primary color
+    primaryContainer: '#A9A9A9',
+    accent: '#FF4081', // your accent color
+    background: '#F7F7F7', // your background color
+    surface: '#FFFFFF', // your surface color
+    error: '#FF0000', // your error color
+    text: '#333333', // your text color
+    onSurface: '#000000', // your color of text on surfaces
+    disabled: '#A9A9A9', // your disabled state color
+    placeholder: '#CCCCCC', // your placeholder text color
+    backdrop: 'rgba(0, 0, 0, 0.5)', // your backdrop color for modals
+    notification: '#FFA500', // your notification color
   },
 };
-
 const App = () => {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [sessionUser, setSessionUser] = useState('');
-  const [welcomeModalVisible, setWelcomeModalVisible] = useState(false);
-  const [userData, setUserData] = useState(null);
+  const [loggedIn, setLoggedIn] = useState(false); // bootleg login token
+  const [sessionUser, setSessionUser] = useState(''); // User_ID of logged in user
+  const [welcomeModalVisible, setWelcomeModalVisible] = useState(false); //new modal of welcome message
+  const [userData, setUserData] = useState(null); // full data of user
+  const [approveNumber, setApproveNumber] = useState(null);
 
   const setUserSession = (userDisplayName) => {
+    // Get Display name for welcome message
     userDisplayName.toString();
     setSessionUser(userDisplayName);
     console.log(userDisplayName);
   };
 
+  const updateApproveNumber = (newNumber) => {
+    setApproveNumber(newNumber);
+  };
+
+  const fetchRequestData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('InventoryRequest')
+        .select('*');
+
+      if (error) {
+        console.error('Error refreshing request data:', error);
+        Alert.alert('Error', 'Failed to refresh request data');
+      } else {
+        setApproveNumber(data.length);
+      }
+    } catch (error) {
+      console.error('Error refreshing request data:', error.message);
+      Alert.alert('Error', 'Failed to refresh request data');
+    } finally {
+      console.log('Finally app.js');
+    }
+  };
+
   useEffect(() => {
+    //Run when loaded
     if (loggedIn && sessionUser) {
       const fetchUserData = async () => {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await supabase //load data from database
             .from('InventoryUsers')
             .select('*')
-            .eq('User_ID', sessionUser.toString());
+            .eq('User_ID', sessionUser.toString()); //WHERE User_ID == sesstionUser
 
           if (error) {
+            //error message
             console.error('Error fetching user data:', error);
           } else if (data && data.length > 0) {
+            // ?????
             setUserData(data[0]);
             setWelcomeModalVisible(true);
           }
@@ -62,10 +103,13 @@ const App = () => {
           console.error('Error fetching user data:', error.message);
         }
       };
-
+      fetchRequestData();
       fetchUserData();
     }
   }, [loggedIn, sessionUser]);
+  useEffect(() => {
+    fetchRequestData();
+  }, [approveNumber]);
 
   const closeWelcomeModal = () => {
     setWelcomeModalVisible(false);
@@ -76,11 +120,25 @@ const App = () => {
     return userData?.User_Level === 'ADMIN';
   };
 
+  const isOJT = () => {
+    return userData?.User_Level === 'OJT';
+  };
+
   return (
     <PaperProvider theme={customTheme}>
       <NavigationContainer>
         {loggedIn ? (
           <Tab.Navigator>
+            {/* <Tab.Screen
+              name='Request'
+              children={() => <LaptopRequestScreen userData={userData} />}
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='laptop' size={size} />
+                ),
+              }}
+            /> */}
+
             <Tab.Screen
               name='Equipment'
               children={() => <LaptopScreen userData={userData} />}
@@ -90,6 +148,18 @@ const App = () => {
                 ),
               }}
             />
+
+            {/* <Tab.Screen
+              name='Equipment'
+              component={LaptopScreen} // Render the LaptopScreen component directly
+              initialParams={{ userData: userData }} // Pass props via initialParams
+              options={{
+                tabBarIcon: ({ color, size }) => (
+                  <List.Icon color={color} icon='laptop' size={size} />
+                ),
+              }}
+            /> */}
+
             <Tab.Screen
               name='Return'
               children={() => <ReturnScreen userData={userData} />}
@@ -99,15 +169,7 @@ const App = () => {
                 ),
               }}
             />
-            <Tab.Screen
-              name='Inventory'
-              component={InventoryScreen}
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='clipboard' size={size} />
-                ),
-              }}
-            />
+
             {isAdmin() && (
               <Tab.Screen
                 name='Log'
@@ -119,6 +181,60 @@ const App = () => {
                 }}
               />
             )}
+            {isAdmin() && (
+              <Tab.Screen
+                name='Booking'
+                children={() => <BookingScreen userData={userData} />}
+                options={{
+                  tabBarIcon: ({ color, size }) => (
+                    <List.Icon color={color} icon='history' size={size} />
+                  ),
+                  //    headerShown: false, // Add this line to hide the header
+                }}
+              />
+            )}
+            {/* {isAdmin() && (
+              <Tab.Screen
+                name='Approve'
+                children={() => <RequestScreen userData={userData} />}
+                options={{
+                  tabBarIcon: ({ color, size }) => (
+                    <List.Icon color={color} icon='send' size={size} />
+                  ),
+                }}
+              />
+            )} */}
+
+            {isAdmin() && (
+              <Tab.Screen
+                name='Approve'
+                children={() => (
+                  <RequestScreen
+                    userData={userData}
+                    updateApproveNumber={updateApproveNumber}
+                  />
+                )}
+                options={{
+                  tabBarIcon: ({ color, size }) => (
+                    <List.Icon color={color} icon='send' size={size} />
+                  ),
+                  // Conditionally render tabBarBadge if approveNumber is more than zero
+                  tabBarBadge: approveNumber > 0 ? approveNumber : null,
+                }}
+              />
+            )}
+            {isOJT() && (
+              <Tab.Screen
+                name='Requests'
+                children={() => <RequestScreen userData={userData} />}
+                options={{
+                  tabBarIcon: ({ color, size }) => (
+                    <List.Icon color={color} icon='send' size={size} />
+                  ),
+                }}
+              />
+            )}
+
             <Tab.Screen
               name='User'
               children={() => (
