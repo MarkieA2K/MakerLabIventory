@@ -6,6 +6,7 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
+  Image,
 } from 'react-native';
 import {
   List,
@@ -13,17 +14,23 @@ import {
   Paragraph,
   TouchableRipple,
   Button,
+  Text,
+  Divider,
 } from 'react-native-paper';
 import supabase from './supabase';
 import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import HeaderNav from './component/HeaderNav';
+import styles from './styles';
 
-const RequestScreen = ({ userData, updateApproveNumber }) => {
+const RequestScreen = ({ userData, updateApproveNumber, setLoggedIn }) => {
   const [requestData, setRequestData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [denyLoading, setDenyLoading] = useState(false);
 
   const isAdmin = () => {
     return userData?.User_Level === 'ADMIN';
@@ -134,7 +141,7 @@ const RequestScreen = ({ userData, updateApproveNumber }) => {
   const denyHandler = async () => {
     console.log(selectedItem?.Request_ID);
     try {
-      setLoading(true);
+      setDenyLoading(true);
       const { data: denyData, error: denyError } = await supabase
         .from('InventoryLaptopList')
         .upsert(
@@ -168,7 +175,7 @@ const RequestScreen = ({ userData, updateApproveNumber }) => {
       console.error('Error Approving Request:', error.message);
       Alert.alert('Error', 'Failed to approve request');
     } finally {
-      setLoading(false);
+      setDenyLoading(false);
     }
   };
 
@@ -221,106 +228,236 @@ const RequestScreen = ({ userData, updateApproveNumber }) => {
       setLoading(false);
     }
   };
-  const getCategoryIcon = (category) => {
+  const formatDate = (dateString) => {
+    const options = {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    };
+  };
+  const getItemImage = (category) => {
     switch (category) {
       case 'Laptop':
-        return 'laptop';
+        return require('../assets/LaptopPic.png');
       case 'Headphones':
-        return 'headphones';
-      // Add more cases for other categories and their corresponding icons
+        return require('../assets/HeadphonesPic.png');
+      // Add more cases for other categories and their corresponding images
       default:
-        return 'help'; // Default icon if category is not recognized
+        return require('../assets/A2K-LOGO.png'); // Default image if category is not recognized
     }
   };
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={refreshRequestData}
-        />
-      }
+    <LinearGradient
+      colors={['#242A3E', '#191D2B', '#0F1016']}
+      style={styles.flexview}
     >
-      <List.Section>
-        {requestData.length > 0 ? (
-          requestData.map((item) => (
-            <TouchableRipple
-              key={item.Laptop_ID}
-              onPress={() => handleItemPress(item)}
-            >
-              <List.Item
-                title={item.Laptop_Name}
-                description={`Requested by: ${item.User_DisplayName}`}
-                left={(props) => (
-                  <List.Icon {...props} icon={getCategoryIcon(item.Category)} />
-                )}
-                style={styles.listItem}
-                descriptionStyle={styles.description}
-              />
-            </TouchableRipple>
-          ))
-        ) : (
-          <List.Item
-            title='No requests available'
-            description='The request list/database is empty.'
-            style={styles.emptyList}
-            descriptionStyle={styles.emptyDescription}
+      <HeaderNav userData={userData} setLoggedIn={setLoggedIn} />
+      <ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshRequestData}
           />
-        )}
-      </List.Section>
-
-      <Modal visible={modalVisible} onRequestClose={closeModal}>
-        <View style={styles.modalContent}>
-          <Title>{selectedItem?.Laptop_Name}</Title>
-          {isAdmin() && (
-            <InfoRow
-              label='Requested By:'
-              value={selectedItem?.User_DisplayName}
+        }
+      >
+        <List.Section>
+          {requestData.length > 0 ? (
+            requestData.map((item) => (
+              <TouchableRipple
+                key={item.Laptop_ID}
+                onPress={() => handleItemPress(item)}
+              >
+                <List.Item
+                  title={item.Laptop_Name}
+                  description={`Requested by: ${item.User_DisplayName}`}
+                  left={() => {
+                    switch (item.Category) {
+                      case 'Laptop':
+                        return (
+                          <Image
+                            source={require('../assets/LaptopPic.png')}
+                            style={styles.icon}
+                          />
+                        );
+                      case 'Headphones':
+                        return (
+                          <Image
+                            source={require('../assets/HeadphonesPic.png')}
+                            style={styles.icon}
+                          />
+                        );
+                      // Add more cases for other categories and their corresponding images
+                      default:
+                        return (
+                          <Image
+                            source={require('../assets/A2K-LOGO.png')}
+                            style={styles.icon}
+                          />
+                        ); // Default image if category is not recognized
+                    }
+                  }}
+                  titleStyle={styles.title}
+                  style={styles.listItem}
+                  descriptionStyle={styles.description}
+                />
+              </TouchableRipple>
+            ))
+          ) : (
+            <List.Item
+              title='No requests available'
+              description='The request list/database is empty.'
+              style={styles.emptyList}
+              titleStyle={styles.emptyTitle}
+              descriptionStyle={styles.emptyDescription}
             />
           )}
-          <InfoRow label='Laptop ID' value={selectedItem?.Laptop_ID} />
-          <InfoRow label='Request Date' value={selectedItem?.Request_Date} />
-          {isOJT() && <InfoRow label='Status' value='Pending Aproval' />}
-          {isAdmin() && (
-            <Button
-              mode='outlined'
-              onPress={handleApprove}
-              loading={loading}
-              disabled={loading}
-              style={styles.returnButton}
-            >
-              Approve
-            </Button>
-          )}
-          {isAdmin() && (
-            <Button
-              loading={loading}
-              disabled={loading}
-              onPress={denyHandler}
-              style={styles.closeButton}
-            >
-              Deny
-            </Button>
-          )}
-          <Button onPress={closeModal} style={styles.closeButton}>
-            Close
-          </Button>
-        </View>
-      </Modal>
+        </List.Section>
+        <Modal
+          visible={modalVisible}
+          animationType='fade'
+          onRequestClose={closeModal}
+        >
+          <LinearGradient
+            colors={['#242A3E', '#191D2B', '#0F1016']}
+            style={styles.flexview}
+          >
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.imageView}>
+                <Image
+                  source={getItemImage(selectedItem?.Category)}
+                  style={styles.imageFrame}
+                />
+              </View>
 
-      <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
-        <View style={styles.successModalContent}>
-          <List.Icon icon='check-circle' color='#4CAF50' size={48} />
-          <Title>Success</Title>
-          <Paragraph style={styles.infoValue}>
-            Request approved successfully.
-          </Paragraph>
-          <Button onPress={closeSuccessModal} style={styles.closeButton}>
-            Close
-          </Button>
-        </View>
-      </Modal>
-    </ScrollView>
+              <View style={styles.modalBox}>
+                <Text
+                  variant='headlineMedium'
+                  style={[
+                    styles.modalHeaderText,
+                    { textAlign: 'center', color: '#FFFFFF' },
+                  ]}
+                >
+                  {selectedItem?.Laptop_Name}
+                </Text>
+                <Divider />
+
+                <Text style={styles.whiteText}>
+                  ID: {selectedItem?.Laptop_ID}
+                </Text>
+                <Text style={styles.whiteText}>
+                  Brand: {selectedItem?.Laptop_Brand}
+                </Text>
+                <Text style={styles.whiteText}>
+                  Model: {selectedItem?.Laptop_Model}
+                </Text>
+                <Text style={styles.whiteText}>
+                  Requested by: {selectedItem?.User_DisplayName}
+                </Text>
+
+                <Divider />
+
+                <Text style={styles.whiteText}>Description:</Text>
+                <Paragraph style={styles.whiteText}>
+                  {selectedItem?.Laptop_Description}
+                </Paragraph>
+                {isOJT() && (
+                  <Paragraph style={styles.whiteText}>
+                    Status: Pending
+                  </Paragraph>
+                )}
+
+                {/* Borrow Button with loading and disabled props */}
+                {isAdmin() && (
+                  <Button
+                    mode='contained'
+                    onPress={handleApprove}
+                    loading={loading}
+                    disabled={loading}
+                    style={styles.returnButton}
+                  >
+                    Approve
+                  </Button>
+                )}
+                {isAdmin() && (
+                  <Button
+                    mode='contained'
+                    loading={loading}
+                    disabled={loading}
+                    onPress={denyHandler}
+                    style={styles.returnButton}
+                  >
+                    Deny
+                  </Button>
+                )}
+
+                <Button
+                  mode='contained'
+                  onPress={closeModal}
+                  style={styles.closeButton}
+                >
+                  Close
+                </Button>
+              </View>
+            </ScrollView>
+          </LinearGradient>
+        </Modal>
+
+        {/* <Modal visible={modalVisible} onRequestClose={closeModal}>
+          <View style={styles.modalContent}>
+            <Title>{selectedItem?.Laptop_Name}</Title>
+            {isAdmin() && (
+              <InfoRow
+                label='Requested By:'
+                value={selectedItem?.User_DisplayName}
+              />
+            )}
+            <InfoRow label='Laptop ID' value={selectedItem?.Laptop_ID} />
+            <InfoRow label='Request Date' value={selectedItem?.Request_Date} />
+            {isOJT() && <InfoRow label='Status' value='Pending Aproval' />}
+            {isAdmin() && (
+              <Button
+                mode='outlined'
+                onPress={handleApprove}
+                loading={loading}
+                disabled={loading}
+                style={styles.returnButton}
+              >
+                Approve
+              </Button>
+            )}
+            {isAdmin() && (
+              <Button
+                loading={loading}
+                disabled={loading}
+                onPress={denyHandler}
+                style={styles.closeButton}
+              >
+                Deny
+              </Button>
+            )}
+            <Button onPress={closeModal} style={styles.closeButton}>
+              Close
+            </Button>
+          </View>
+        </Modal> */}
+
+        <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
+          <View style={styles.successModalContent}>
+            <List.Icon icon='check-circle' color='#4CAF50' size={48} />
+            <Title>Success</Title>
+            <Paragraph style={styles.infoValue}>
+              Request approved successfully.
+            </Paragraph>
+            <Button onPress={closeSuccessModal} style={styles.closeButton}>
+              Close
+            </Button>
+          </View>
+        </Modal>
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
@@ -330,62 +467,5 @@ const InfoRow = ({ label, value }) => (
     <Paragraph style={styles.infoValue}>{value}</Paragraph>
   </View>
 );
-
-const styles = StyleSheet.create({
-  listItem: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    paddingHorizontal: 10,
-    margin: 1,
-
-    backgroundColor: '#f5f5f5', // Adjust the background color here
-    borderRadius: 10,
-  },
-  description: {
-    color: '#888',
-    marginTop: 5,
-  },
-  emptyList: {
-    paddingHorizontal: 10,
-    paddingVertical: 15,
-    backgroundColor: '#f5f5f5', // Adjust the background color here
-  },
-  emptyDescription: {
-    fontStyle: 'italic',
-    color: '#888',
-    marginTop: 5,
-  },
-  modalContent: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  infoLabel: {
-    fontWeight: 'bold',
-  },
-  infoValue: {},
-  button: {
-    marginTop: 16,
-  },
-  approveButton: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-
-  closeButton: {
-    marginTop: 8,
-  },
-  successModalContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-});
 
 export default RequestScreen;

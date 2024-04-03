@@ -4,8 +4,6 @@ import { TextInput, Button, Title, useTheme } from 'react-native-paper';
 import supabase from './supabase'; // Import your Supabase client instance
 
 const LoginScreen = ({ setLoggedIn, setUserSession }) => {
-  const theme = useTheme(); // Use the theme hook
-
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -107,7 +105,7 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#BDC3C7',
+
     borderRadius: 4,
     paddingHorizontal: 12,
     backgroundColor: 'white',

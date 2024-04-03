@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useTheme, Button, Avatar, Modal, Portal } from 'react-native-paper';
 
 const SettingsScreen = ({ setLoggedIn, setSessionUser, userData }) => {
-  const theme = useTheme();
   const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
   const handleLogout = () => {
@@ -26,12 +25,7 @@ const SettingsScreen = ({ setLoggedIn, setSessionUser, userData }) => {
   return (
     <View style={styles.container}>
       <View style={styles.userInfo}>
-        <Avatar.Icon
-          icon='account-circle'
-          size={80}
-          color={theme.colors.primary}
-          style={styles.avatar}
-        />
+        <Avatar.Icon icon='account-circle' size={80} style={styles.avatar} />
         {userData && (
           <View style={styles.textContainer}>
             <Text style={styles.text}>Username: {userData.User_Name}</Text>
@@ -46,7 +40,6 @@ const SettingsScreen = ({ setLoggedIn, setSessionUser, userData }) => {
       <Button
         mode='contained'
         onPress={handleLogout}
-        color={theme.colors.primary}
         style={styles.logoutButton}
       >
         Logout

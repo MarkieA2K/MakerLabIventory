@@ -5,6 +5,7 @@ import {
   Modal,
   StyleSheet,
   RefreshControl,
+  Image,
 } from 'react-native';
 import {
   List,
@@ -12,11 +13,16 @@ import {
   Paragraph,
   TouchableRipple,
   Button,
+  Text,
+  Divider,
 } from 'react-native-paper';
 import { useFocusEffect } from '@react-navigation/native';
 import supabase from './supabase';
+import { LinearGradient } from 'expo-linear-gradient';
+import HeaderNav from './component/HeaderNav';
+import styles from './styles';
 
-const ReturnScreen = ({ userData }) => {
+const ReturnScreen = ({ userData, setLoggedIn }) => {
   const [returnData, setReturnData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -192,181 +198,187 @@ const ReturnScreen = ({ userData }) => {
     return new Date(dateString).toLocaleString(undefined, options);
   };
 
-  const getCategoryIcon = (category) => {
+  const getItemImage = (category) => {
     switch (category) {
       case 'Laptop':
-        return 'laptop';
+        return require('../assets/LaptopPic.png');
       case 'Headphones':
-        return 'headphones';
-      // Add more cases for other categories and their corresponding icons
+        return require('../assets/HeadphonesPic.png');
+      // Add more cases for other categories and their corresponding images
       default:
-        return 'help'; // Default icon if category is not recognized
+        return require('../assets/A2K-LOGO.png'); // Default image if category is not recognized
     }
   };
 
   return (
-    <ScrollView
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={fetchReturnData} />
-      }
+    <LinearGradient
+      colors={['#242A3E', '#191D2B', '#0F1016']}
+      style={styles.flexview}
     >
-      <View>
-        <List.Section>
-          {returnData.length > 0 ? (
-            returnData.map((item) => (
-              <TouchableRipple
-                key={item.Laptop_ID}
-                onPress={() => handleItemPress(item)}
-              >
-                <List.Item
-                  title={item.Laptop_Name}
-                  description={item.Laptop_Description}
-                  left={(props) => (
-                    <List.Icon
-                      {...props}
-                      icon={getCategoryIcon(item.Category)}
-                    />
-                  )}
-                  style={styles.listItem}
-                  descriptionStyle={styles.description}
-                />
-              </TouchableRipple>
-            ))
-          ) : (
-            <List.Item
-              title='No laptops currently in your possession'
-              description='The list/database is empty or try refreshing.'
-              style={styles.emptyList}
-              descriptionStyle={styles.emptyDescription}
-            />
-          )}
-        </List.Section>
-
-        <Modal visible={modalVisible} onRequestClose={closeModal}>
-          <ScrollView>
-            <View style={styles.modalContent}>
-              <Title>{selectedItem?.Laptop_Name}</Title>
-
-              {/* Placeholder for Image Frame */}
-              <View style={styles.imageFrame} />
-
-              <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
-              <InfoRow label='Name' value={selectedItem?.Laptop_Name} />
-
-              <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
-              <InfoRow label='Model' value={selectedItem?.Laptop_Model} />
-              <InfoRow
-                label='Borrow Date'
-                value={formatDate(selectedItem?.Laptop_BorrowDate)}
+      <HeaderNav userData={userData} setLoggedIn={setLoggedIn} />
+      <ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={fetchReturnData} />
+        }
+      >
+        <View>
+          <List.Section>
+            {returnData.length > 0 ? (
+              returnData.map((item) => (
+                <TouchableRipple
+                  key={item.Laptop_ID}
+                  onPress={() => handleItemPress(item)}
+                >
+                  <List.Item
+                    title={item.Laptop_Name}
+                    description={item.Laptop_Description}
+                    left={() => {
+                      switch (item.Category) {
+                        case 'Laptop':
+                          return (
+                            <Image
+                              source={require('../assets/LaptopPic.png')}
+                              style={styles.icon}
+                            />
+                          );
+                        case 'Headphones':
+                          return (
+                            <Image
+                              source={require('../assets/HeadphonesPic.png')}
+                              style={styles.icon}
+                            />
+                          );
+                        // Add more cases for other categories and their corresponding images
+                        default:
+                          return (
+                            <Image
+                              source={require('../assets/A2K-LOGO.png')}
+                              style={styles.icon}
+                            />
+                          ); // Default image if category is not recognized
+                      }
+                    }}
+                    style={styles.listItem}
+                    titleStyle={styles.title}
+                    descriptionStyle={styles.description}
+                  />
+                </TouchableRipple>
+              ))
+            ) : (
+              <List.Item
+                title='No laptops currently in your possession'
+                description='The list/database is empty or try refreshing.'
+                style={styles.emptyList}
+                titleStyle={styles.title}
+                descriptionStyle={styles.emptyDescription}
               />
+            )}
+          </List.Section>
+          <Modal
+            visible={modalVisible}
+            animationType='fade'
+            onRequestClose={closeModal}
+          >
+            <LinearGradient
+              colors={['#242A3E', '#191D2B', '#0F1016']}
+              style={styles.flexview}
+            >
+              <ScrollView style={styles.modalContent}>
+                <View style={styles.imageView}>
+                  <Image
+                    source={getItemImage(selectedItem?.Category)}
+                    style={styles.imageFrame}
+                  />
+                </View>
 
-              {/* Return Button with loading and disabled props */}
-              <Button
-                mode='outlined'
-                onPress={returnLaptopHandler}
-                style={styles.returnButton}
-                disabled={returnButtonDisabled}
-                loading={loading}
-              >
-                Return
-              </Button>
+                <View style={styles.modalBox}>
+                  <Text
+                    variant='headlineMedium'
+                    style={[
+                      styles.modalHeaderText,
+                      { textAlign: 'center', color: '#FFFFFF' },
+                    ]}
+                  >
+                    {selectedItem?.Laptop_Name}
+                  </Text>
+                  <Divider />
 
-              {/* Add more fields as needed */}
-              <Button
-                onPress={closeModal}
-                style={styles.closeButton}
-                mode='outlined'
-              >
+                  <Text style={styles.whiteText}>
+                    ID: {selectedItem?.Laptop_ID}
+                  </Text>
+                  <Text style={styles.whiteText}>
+                    Brand: {selectedItem?.Laptop_Brand}
+                  </Text>
+                  <Text style={styles.whiteText}>
+                    Model: {selectedItem?.Laptop_Model}
+                  </Text>
+                  <Text style={styles.whiteText}>
+                    Date Borrowed: {formatDate(selectedItem?.Laptop_BorrowDate)}
+                  </Text>
+
+                  {/* <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
+                  <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
+                  <InfoRow label='Model' value={selectedItem?.Laptop_Model} /> */}
+
+                  <Divider />
+                  {/* <InfoRow
+                    label='Description'
+                    value={selectedItem?.Laptop_Description}
+                  /> */}
+
+                  {/* Borrow Button with loading and disabled props */}
+
+                  <Button
+                    mode='contained'
+                    onPress={returnLaptopHandler}
+                    style={styles.returnButton}
+                    disabled={returnButtonDisabled}
+                    loading={loading}
+                  >
+                    Return
+                  </Button>
+
+                  {/* Add more fields as needed */}
+                  <Button
+                    onPress={closeModal}
+                    style={styles.closeButton}
+                    mode='contained'
+                  >
+                    Close
+                  </Button>
+                </View>
+              </ScrollView>
+            </LinearGradient>
+          </Modal>
+
+          <Modal
+            visible={successModalVisible}
+            onRequestClose={closeSuccessModal}
+          >
+            <View style={styles.successModalContent}>
+              <List.Icon icon='check-circle' color='#4CAF50' size={48} />
+              <Title>Success</Title>
+              <Paragraph style={styles.successModalText}>
+                Laptop returned successfully!
+              </Paragraph>
+
+              <View style={styles.returnDateTime}>
+                <List.Icon icon='calendar' color='#2196F3' size={24} />
+                <Paragraph style={styles.infoValue}>
+                  {new Date().toLocaleString()}
+                </Paragraph>
+              </View>
+
+              <Button onPress={closeSuccessModal} style={styles.closeButton}>
                 Close
               </Button>
             </View>
-          </ScrollView>
-        </Modal>
-
-        <Modal visible={successModalVisible} onRequestClose={closeSuccessModal}>
-          <View style={styles.successModalContent}>
-            <List.Icon icon='check-circle' color='#4CAF50' size={48} />
-            <Title>Success</Title>
-            <Paragraph style={styles.successModalText}>
-              Laptop returned successfully!
-            </Paragraph>
-
-            <View style={styles.returnDateTime}>
-              <List.Icon icon='calendar' color='#2196F3' size={24} />
-              <Paragraph style={styles.infoValue}>
-                {new Date().toLocaleString()}
-              </Paragraph>
-            </View>
-
-            <Button onPress={closeSuccessModal} style={styles.closeButton}>
-              Close
-            </Button>
-          </View>
-        </Modal>
-      </View>
-    </ScrollView>
+          </Modal>
+        </View>
+      </ScrollView>
+    </LinearGradient>
   );
 };
-const styles = StyleSheet.create({
-  listItem: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    paddingHorizontal: 10,
-    margin: 1,
-
-    backgroundColor: '#f5f5f5', // Adjust the background color here
-    borderRadius: 10,
-  },
-  description: {
-    color: '#888',
-    marginTop: 5,
-  },
-  emptyList: {
-    paddingHorizontal: 10,
-    paddingVertical: 15,
-    backgroundColor: '#f5f5f5', // Adjust the background color here
-  },
-  emptyDescription: {
-    fontStyle: 'italic',
-    color: '#888',
-    marginTop: 5,
-  },
-
-  modalContent: {
-    padding: 16,
-  },
-  imageFrame: {
-    aspectRatio: 1,
-    backgroundColor: '#ddd',
-    marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  infoLabel: {
-    fontWeight: 'bold',
-  },
-  infoValue: {},
-  returnButton: {
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  closeButton: {
-    marginTop: 8,
-  },
-  successModalContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  returnDateTime: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-});
 
 export default ReturnScreen;

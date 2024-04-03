@@ -11,8 +11,8 @@ import {
   Button,
   List,
 } from 'react-native-paper';
+import { Image, StyleSheet } from 'react-native';
 
-import { CalendarProvider } from 'react-native-calendars';
 import SettingsScreen from './src/SettingsScreen';
 import LoginScreen from './src/LoginScreen';
 import LaptopScreen from './src/LaptopScreen';
@@ -20,8 +20,7 @@ import ReturnScreen from './src/ReturnScreen';
 import supabase from './src/supabase';
 import LaptopLogScreen from './src/LaptopLogScreen';
 import RequestScreen from './src/RequestScreen';
-import LaptopRequestScreen from './src/LaptopRequestScreen';
-import BookingScreen from './src/BookingScreen';
+// import BookingScreen from './src/BookingScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -32,22 +31,26 @@ const customTheme = {
     primary: '#606060', // your primary color
     primaryContainer: '#A9A9A9',
     accent: '#FF4081', // your accent color
-    background: '#F7F7F7', // your background color
+    background: '#242A3E', // your background color
     surface: '#FFFFFF', // your surface color
     error: '#FF0000', // your error color
     text: '#333333', // your text color
     onSurface: '#000000', // your color of text on surfaces
-    disabled: '#A9A9A9', // your disabled state color
+    disabled: '#CCCCCC', // your disabled state color
+    surfaceDisabled: 'rgba(255, 255, 255, 0.7)',
     placeholder: '#CCCCCC', // your placeholder text color
     backdrop: 'rgba(0, 0, 0, 0.5)', // your backdrop color for modals
     notification: '#FFA500', // your notification color
+    backgroundGradient1: '#242A3E',
+    backgroundGradient2: '#191D2B',
+    backgroundGradient3: '#0F1016',
   },
 };
 const App = () => {
   const [loggedIn, setLoggedIn] = useState(false); // bootleg login token
   const [sessionUser, setSessionUser] = useState(''); // User_ID of logged in user
   const [welcomeModalVisible, setWelcomeModalVisible] = useState(false); //new modal of welcome message
-  const [userData, setUserData] = useState(null); // full data of user
+  const [userData, setUserData] = useState(''); // full data of user
   const [approveNumber, setApproveNumber] = useState(null);
 
   const setUserSession = (userDisplayName) => {
@@ -103,7 +106,7 @@ const App = () => {
           console.error('Error fetching user data:', error.message);
         }
       };
-      fetchRequestData();
+
       fetchUserData();
     }
   }, [loggedIn, sessionUser]);
@@ -128,7 +131,36 @@ const App = () => {
     <PaperProvider theme={customTheme}>
       <NavigationContainer>
         {loggedIn ? (
-          <Tab.Navigator>
+          <Tab.Navigator
+            screenOptions={{
+              headerShown: false,
+              tabBarStyle: {
+                position: 'absolute',
+                elevation: 0,
+                marginHorizontal: 17,
+                height: 95,
+                bottom: 10,
+                borderRadius: 50,
+                backgroundColor: 'rgba(255, 255, 255, 0.12)', // Corrected background color
+                borderColor: 'black',
+                borderWidth: 1,
+                padding: 20,
+                paddingBottom: 10,
+                paddingHorizontal: 10,
+              },
+              tabBarActiveTintColor: '#FFD911',
+              tabBarInactiveTintColor: 'gray',
+              tabBarLabelStyle: {
+                fontSize: 15, // Adjust the font size of the label
+                textAlign: 'center', // Center align the label text
+                marginBottom: 5, // Add margin to the bottom of the label
+              },
+              tabBarIconStyle: {
+                width: 60, // Adjust the width of the icon
+                height: 60, // Adjust the height of the icon
+              },
+            }}
+          >
             {/* <Tab.Screen
               name='Request'
               children={() => <LaptopRequestScreen userData={userData} />}
@@ -141,7 +173,13 @@ const App = () => {
 
             <Tab.Screen
               name='Equipment'
-              children={() => <LaptopScreen userData={userData} />}
+              children={() => (
+                <LaptopScreen
+                  userData={userData}
+                  setLoggedIn={setLoggedIn}
+                  setSessionUser={setSessionUser}
+                />
+              )}
               options={{
                 tabBarIcon: ({ color, size }) => (
                   <List.Icon color={color} icon='laptop' size={size} />
@@ -162,7 +200,13 @@ const App = () => {
 
             <Tab.Screen
               name='Return'
-              children={() => <ReturnScreen userData={userData} />}
+              children={() => (
+                <ReturnScreen
+                  userData={userData}
+                  setLoggedIn={setLoggedIn}
+                  setSessionUser={setSessionUser}
+                />
+              )}
               options={{
                 tabBarIcon: ({ color, size }) => (
                   <List.Icon color={color} icon='arrow-left' size={size} />
@@ -175,13 +219,22 @@ const App = () => {
                 name='Log'
                 component={LaptopLogScreen}
                 options={{
+                  headerShown: true,
                   tabBarIcon: ({ color, size }) => (
                     <List.Icon color={color} icon='history' size={size} />
                   ),
+                  headerStyle: {
+                    backgroundColor: '#333333', // Set background color if needed
+                  },
+                  headerTitleStyle: {
+                    fontWeight: 'bold', // Customize header title style if needed
+                    color: 'white',
+                    padding: 8,
+                  },
                 }}
               />
             )}
-            {isAdmin() && (
+            {/* {isAdmin() && (
               <Tab.Screen
                 name='Booking'
                 children={() => <BookingScreen userData={userData} />}
@@ -190,17 +243,6 @@ const App = () => {
                     <List.Icon color={color} icon='history' size={size} />
                   ),
                   //    headerShown: false, // Add this line to hide the header
-                }}
-              />
-            )}
-            {/* {isAdmin() && (
-              <Tab.Screen
-                name='Approve'
-                children={() => <RequestScreen userData={userData} />}
-                options={{
-                  tabBarIcon: ({ color, size }) => (
-                    <List.Icon color={color} icon='send' size={size} />
-                  ),
                 }}
               />
             )} */}
@@ -212,6 +254,8 @@ const App = () => {
                   <RequestScreen
                     userData={userData}
                     updateApproveNumber={updateApproveNumber}
+                    setLoggedIn={setLoggedIn}
+                    setSessionUser={setSessionUser}
                   />
                 )}
                 options={{
@@ -226,7 +270,13 @@ const App = () => {
             {isOJT() && (
               <Tab.Screen
                 name='Requests'
-                children={() => <RequestScreen userData={userData} />}
+                children={() => (
+                  <RequestScreen
+                    userData={userData}
+                    setLoggedIn={setLoggedIn}
+                    setSessionUser={setSessionUser}
+                  />
+                )}
                 options={{
                   tabBarIcon: ({ color, size }) => (
                     <List.Icon color={color} icon='send' size={size} />
@@ -235,7 +285,7 @@ const App = () => {
               />
             )}
 
-            <Tab.Screen
+            {/* <Tab.Screen
               name='User'
               children={() => (
                 <SettingsScreen
@@ -249,7 +299,7 @@ const App = () => {
                   <List.Icon color={color} icon='account' size={size} />
                 ),
               }}
-            />
+            /> */}
           </Tab.Navigator>
         ) : (
           <LoginScreen
@@ -265,6 +315,10 @@ const App = () => {
           onDismiss={closeWelcomeModal}
           contentContainerStyle={styles.modalContent}
         >
+          <Image
+            style={styles.tinyLogo}
+            source={require('./assets/A2K-LOGO.png')}
+          />
           <Text style={styles.modalText}>{`Welcome, ${
             userData ? userData.User_DisplayName : ''
           }!`}</Text>
@@ -290,11 +344,16 @@ const styles = {
     alignItems: 'center',
   },
   modalText: {
+    marginTop: 20,
     fontSize: 18,
     marginBottom: 10,
   },
   modalButton: {
     marginTop: 10,
+  },
+  tinyLogo: {
+    width: 170,
+    height: 80,
   },
 };
 
