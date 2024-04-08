@@ -28,7 +28,7 @@ const Header = ({ userData, setLoggedIn }) => {
           </Text>
         </View>
         <TouchableOpacity onPress={modalVisible} style={styles.settingsButton}>
-          <MaterialIcons name='manage-accounts' size={40} color='white' />
+          <MaterialIcons name='account-circle' size={40} color='white' />
         </TouchableOpacity>
       </View>
 
@@ -36,7 +36,6 @@ const Header = ({ userData, setLoggedIn }) => {
       <Modal
         animationType='fade' // Change animation to fade
         transparent={true}
-        
         visible={viewSettings}
         onRequestClose={() => setViewSettings(false)}
         onDismiss={() => setViewSettings(false)}

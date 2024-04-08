@@ -173,6 +173,8 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
         } else {
           console.error('Error adding laptop item:', error.message);
           setShowError(true);
+          setBorrowButtonDisabled(false);
+          setBorrowLoading(false);
           // Handle other types of errors here
         }
       } else {
@@ -278,10 +280,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
         setBorrowButtonDisabled(false);
         setBorrowLoading(false);
         // Update the local state to reflect the changes
-        const updatedData = laptopData.filter(
-          (item) => item.Laptop_ID !== selectedItem?.Laptop_ID
-        );
-        setLaptopData(updatedData);
+
         // Close the modal after deleting the item
         setModalVisible(false);
 
@@ -560,15 +559,27 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
     }
   };
   const closeModal = () => {
+    setBorrowButtonDisabled(false);
+    setBorrowLoading(false);
     setModalVisible(false);
     setSelectedItem(null);
   };
 
   const closeSuccessModal = () => {
+    setDisabled(false);
+    setDelDisable(false);
     fetchLaptopData();
     setModalMode(null);
     setSuccessModalVisible(false);
     setAddVisible(false);
+
+    setInputID(null);
+    setInputName(null);
+    setInputBrand(null);
+    setInputModel(null);
+    setInputDesc(null);
+    setInputCategory(null);
+    setShowError(false);
   };
 
   const addModalshow = () => {
@@ -856,20 +867,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
                       {errorMsg}
                     </Text>
                   )}
-                  <DropDown
-                    label={'Category'}
-                    mode={'contained'}
-                    visible={showDropDown}
-                    showDropDown={() => setShowDropDown(true)}
-                    onDismiss={() => setShowDropDown(false)}
-                    value={inputCategory}
-                    setValue={setInputCategory}
-                    list={[
-                      { label: 'Laptop', value: 'Laptop' },
-                      { label: 'Headphones', value: 'Headphones' },
-                      { label: 'Other', value: 'Other' },
-                    ]}
-                  />
+
                   <TextInput
                     mode='flat'
                     disabled={disabled}
@@ -942,9 +940,9 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
                     }}
                   /> */}
 
-                  {/* {!delDisable && (
+                  {!delDisable && (
                     <SelectList
-                      placeholder='Category'
+                      placeholder={inputCategory}
                       boxStyles={styles.input}
                       dropdownStyles={styles.input}
                       setSelected={(val) => setInputCategory(val)}
@@ -952,8 +950,20 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
                       save='value'
                       search='false'
                     />
-
-                  )} */}
+                  )}
+                  {isDelete() && (
+                    <TextInput
+                      disabled={delDisable}
+                      mode='flat'
+                      label='Category'
+                      style={styles.input}
+                      value={inputCategory}
+                      onChangeText={(text) => {
+                        setInputDesc(text);
+                        console.log(inputDesc);
+                      }}
+                    />
+                  )}
 
                   <Divider />
                   {isAdd() && (

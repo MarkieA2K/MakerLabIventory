@@ -45,6 +45,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const [showError, setShowError] = useState(false);
   const [modalMode, setModalMode] = useState(null);
   const [inputCategory, setInputCategory] = useState(null);
+  const [inputFacility, setInputFacility] = useState(null);
   const [disabled, setDisabled] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [delDisable, setDelDisable] = useState(false);
@@ -53,6 +54,13 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     { label: 'Furniture', value: 'Furniture' },
     { label: 'Appliance', value: 'Appliance' },
     { label: 'Peripheral', value: 'Peripheral' },
+
+    { label: 'Other', value: 'Other' },
+  ];
+  const dropItemsFacility = [
+    { label: 'MakerLab', value: 'MakerLab' },
+    { label: 'Training Hub', value: 'Training Hub' },
+    { label: 'Reception', value: 'Reception' },
 
     { label: 'Other', value: 'Other' },
   ];
@@ -97,6 +105,8 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   };
 
   const closeModal = () => {
+    setBorrowButtonDisabled(false);
+    setBorrowLoading(false);
     setModalVisible(false);
     setSelectedItem(null);
   };
@@ -106,6 +116,38 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     setSuccessModalVisible(false);
     setAddVisible(false);
     fetchInventoryData();
+  };
+  const openEdit = () => {
+    setBorrowButtonDisabled(false);
+    setBorrowLoading(false);
+    console.log('EDIT NA');
+    setModalMode('Edit');
+    setAddVisible(true);
+    setDisabled(true);
+    setInputID(selectedItem ? selectedItem.Item_Id : null); ///error here chatgpt
+    setInputName(selectedItem ? selectedItem.Item_Name : null);
+    setInputBrand(selectedItem ? selectedItem.Item_Brand : null);
+    setInputModel(selectedItem ? selectedItem.Item_Model : null);
+    setInputDesc(selectedItem ? selectedItem.Item_Description : null);
+    setInputCategory(selectedItem ? selectedItem.Item_Category : null);
+    setInputFacility(selectedItem ? selectedItem.Item_Facility : null);
+  };
+  const openDelete = () => {
+    setDelDisable(true);
+
+    setBorrowButtonDisabled(false);
+    setBorrowLoading(false);
+    console.log('EDIT NA');
+    setModalMode('Delete');
+    setAddVisible(true);
+    setDisabled(true);
+    setInputID(selectedItem ? selectedItem.Item_Id : null); ///error here chatgpt
+    setInputName(selectedItem ? selectedItem.Item_Name : null);
+    setInputBrand(selectedItem ? selectedItem.Item_Brand : null);
+    setInputModel(selectedItem ? selectedItem.Item_Model : null);
+    setInputDesc(selectedItem ? selectedItem.Item_Description : null);
+    setInputCategory(selectedItem ? selectedItem.Item_Category : null);
+    setInputFacility(selectedItem ? selectedItem.Item_Facility : null);
   };
 
   const addModalshow = () => {
@@ -121,6 +163,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         !inputBrand ||
         !inputModel ||
         !inputDesc ||
+        !inputFacility ||
         !inputCategory
       ) {
         setErrorMsg('All fields are required');
@@ -147,6 +190,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
           Item_Model: inputModel,
           Item_Description: inputDesc,
           Item_Category: inputCategory,
+          Item_Facility: inputFacility,
           Item_Quantity: 1, // Assuming the default quantity is 1 for a new item
         },
       ]);
@@ -178,6 +222,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         setInputModel(null);
         setInputDesc(null);
         setInputCategory(null);
+        setInputFacility(null);
         // Close the modal after adding the item
         setAddVisible(false);
         setModalVisible(false);
@@ -185,6 +230,99 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     } catch (error) {
       console.error('Error adding laptop item:', error.message);
       // Handle other types of errors here
+    }
+  };
+  const editHandler = async () => {
+    setBorrowButtonDisabled(true);
+    setBorrowLoading(true);
+    try {
+      // Check if any form field is empty
+      if (
+        !inputID ||
+        !inputName ||
+        !inputBrand ||
+        !inputModel ||
+        !inputDesc ||
+        !inputCategory ||
+        !inputFacility
+      ) {
+        setErrorMsg('All fields are required');
+        setBorrowButtonDisabled(false);
+        setBorrowLoading(false);
+        return; // Exit the function early if any field is empty
+      }
+
+      // Proceed with updating the laptop item in the database
+      const { data, error } = await supabase
+        .from('InventoryList')
+        .update({
+          Item_Name: inputName,
+          Item_Brand: inputBrand,
+          Item_Model: inputModel,
+          Item_Description: inputDesc,
+          Item_Category: inputCategory,
+          Item_Facility: inputFacility,
+        })
+        .eq('Item_Id', inputID);
+
+      if (error) {
+        setErrorMsg('Error editing laptop item: ' + error.message);
+        // Handle error here
+      } else {
+        console.log('Laptop item edited successfully:', data);
+        setBorrowButtonDisabled(false);
+        setBorrowLoading(false);
+        setDisabled(false);
+        setErrorMsg(null);
+        // Optionally, you can update the local state to reflect the changes
+        // For example, you can call fetchLaptopData() to refresh the laptop data
+        setSuccessModalVisible(true);
+
+        // Clear the input fields after successful edition
+        setInputID(null);
+        setInputName(null);
+        setInputBrand(null);
+        setInputModel(null);
+        setInputDesc(null);
+        setInputCategory(null);
+        setInputFacility(null);
+        // Close the modal after editing the item
+        setAddVisible(false);
+        setModalVisible(false);
+      }
+    } catch (error) {
+      setErrorMsg('Error editing laptop item: ' + error.message);
+      setBorrowButtonDisabled(false);
+      setBorrowLoading(false);
+      // Handle other types of errors here
+    }
+  };
+  const deleteHandler = async () => {
+    try {
+      setBorrowButtonDisabled(true);
+      setBorrowLoading(true);
+
+      // Proceed with deleting the laptop item from the database
+      const { data, error } = await supabase
+        .from('InventoryList')
+        .delete()
+        .eq('Item_Id', selectedItem?.Item_Id);
+
+      if (error) {
+        console.error('Error deleting laptop item:', error.message);
+      } else {
+        console.log('Laptop item deleted successfully:', data);
+        setBorrowButtonDisabled(false);
+        setBorrowLoading(false);
+        // Update the local state to reflect the changes
+
+        // Close the modal after deleting the item
+        setModalVisible(false);
+
+        setSuccessModalVisible(true);
+      }
+    } catch (error) {
+      console.error('Error deleting laptop item:', error.message);
     }
   };
 
@@ -304,7 +442,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                     <Button
                       icon='briefcase-edit'
                       mode='contained'
-                      // onPress={openEdit}
+                      onPress={openEdit}
                       style={styles.optionButton}
                     >
                       Edit
@@ -312,24 +450,13 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                     <Button
                       icon='delete'
                       mode='contained'
-                      // onPress={openDelete}
+                      onPress={openDelete}
                       style={styles.optionButton}
                     >
                       Delete
                     </Button>
                   </View>
 
-                  {isAdmin() && (
-                    <Button
-                      mode='contained'
-                      // onPress={borrowLaptopHandler}
-                      style={styles.borrowButton}
-                      disabled={borrowButtonDisabled}
-                      loading={borrowLoading}
-                    >
-                      Borrow
-                    </Button>
-                  )}
                   {isOJT() && (
                     <Button
                       mode='contained'
@@ -357,7 +484,30 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
             visible={successModalVisible}
             onRequestClose={closeSuccessModal}
           >
-            {/* Your success modal content */}
+            <View style={styles.successModalContent}>
+              <List.Icon icon='check-circle' color='#4CAF50' size={48} />
+              <Title>Success</Title>
+
+              {isAdd() && (
+                <Paragraph style={styles.successModalText}>
+                  Equipment added successfully!
+                </Paragraph>
+              )}
+              {isDelete() && (
+                <Paragraph style={styles.successModalText}>
+                  Equipment deleted successfully!
+                </Paragraph>
+              )}
+              {isEdit() && (
+                <Paragraph style={styles.successModalText}>
+                  Equipment edited successfully!
+                </Paragraph>
+              )}
+
+              <Button onPress={closeSuccessModal} style={styles.closeButton}>
+                Close
+              </Button>
+            </View>
           </Modal>
 
           <Modal animationType='fade' visible={addVisible}>
@@ -480,13 +630,50 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
 
                   {!delDisable && (
                     <SelectList
-                      placeholder='Category'
+                      placeholder={inputCategory}
                       boxStyles={styles.input}
                       dropdownStyles={styles.input}
                       setSelected={(val) => setInputCategory(val)}
                       data={dropItems}
                       save='value'
                       search='false'
+                    />
+                  )}
+                  {!delDisable && (
+                    <SelectList
+                      placeholder={inputFacility}
+                      boxStyles={styles.input}
+                      dropdownStyles={styles.input}
+                      setSelected={(val) => setInputFacility(val)}
+                      data={dropItemsFacility}
+                      save='value'
+                      search='false'
+                    />
+                  )}
+                  {isDelete() && (
+                    <TextInput
+                      disabled={delDisable}
+                      mode='flat'
+                      label='Category'
+                      style={styles.input}
+                      value={inputCategory}
+                      onChangeText={(text) => {
+                        setInputDesc(text);
+                        console.log(inputDesc);
+                      }}
+                    />
+                  )}
+                  {isDelete() && (
+                    <TextInput
+                      disabled={delDisable}
+                      mode='flat'
+                      label='Facility'
+                      style={styles.input}
+                      value={inputFacility}
+                      onChangeText={(text) => {
+                        setInputDesc(text);
+                        console.log(inputDesc);
+                      }}
                     />
                   )}
 
@@ -509,7 +696,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       loading={borrowLoading}
                       style={styles.closeButton}
                       mode='contained'
-                      // onPress={editHandler}
+                      onPress={editHandler}
                       icon='briefcase-edit'
                     >
                       Edit Item
@@ -521,7 +708,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       loading={borrowLoading}
                       style={styles.closeButton}
                       mode='contained'
-                      // onPress={deleteHandler}
+                      onPress={deleteHandler}
                       icon='delete'
                     >
                       Delete item
@@ -542,6 +729,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       setInputModel(null);
                       setInputDesc(null);
                       setInputCategory(null);
+                      setInputFacility(null);
                       setShowError(false);
                     }}
                   >
