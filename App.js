@@ -20,6 +20,7 @@ import ReturnScreen from './src/ReturnScreen';
 import supabase from './src/supabase';
 import LaptopLogScreen from './src/LaptopLogScreen';
 import RequestScreen from './src/RequestScreen';
+import InventoryScreen from './src/InventoryScreen';
 // import BookingScreen from './src/BookingScreen';
 
 const Tab = createBottomTabNavigator();
@@ -32,10 +33,11 @@ const customTheme = {
     primaryContainer: '#A9A9A9',
     accent: '#FF4081', // your accent color
     background: '#242A3E', // your background color
-    surface: '#FFFFFF', // your surface color
+    surface: '#4D4646', // your surface color
     error: '#FF0000', // your error color
     text: '#333333', // your text color
     onSurface: '#000000', // your color of text on surfaces
+    onSurfaceVariant: '#707070',
     disabled: '#CCCCCC', // your disabled state color
     surfaceDisabled: 'rgba(255, 255, 255, 0.7)',
     placeholder: '#CCCCCC', // your placeholder text color
@@ -52,12 +54,17 @@ const App = () => {
   const [welcomeModalVisible, setWelcomeModalVisible] = useState(false); //new modal of welcome message
   const [userData, setUserData] = useState(''); // full data of user
   const [approveNumber, setApproveNumber] = useState(null);
-
+  const [userMode, setUserMode] = useState(null);
   const setUserSession = (userDisplayName) => {
     // Get Display name for welcome message
     userDisplayName.toString();
     setSessionUser(userDisplayName);
     console.log(userDisplayName);
+  };
+
+  const changeMode = (mode) => {
+    setUserMode(mode);
+    console.log(mode);
   };
 
   const updateApproveNumber = (newNumber) => {
@@ -161,150 +168,123 @@ const App = () => {
               },
             }}
           >
-            {/* <Tab.Screen
-              name='Request'
-              children={() => <LaptopRequestScreen userData={userData} />}
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='laptop' size={size} />
-                ),
-              }}
-            /> */}
-
-            <Tab.Screen
-              name='Equipment'
-              children={() => (
-                <LaptopScreen
-                  userData={userData}
-                  setLoggedIn={setLoggedIn}
-                  setSessionUser={setSessionUser}
+            {userMode === 'Handover' && (
+              <>
+                <Tab.Screen
+                  name='Equipment'
+                  children={() => (
+                    <LaptopScreen
+                      userData={userData}
+                      setLoggedIn={setLoggedIn}
+                      setSessionUser={setSessionUser}
+                    />
+                  )}
+                  options={{
+                    tabBarIcon: ({ color, size }) => (
+                      <List.Icon color={color} icon='laptop' size={size} />
+                    ),
+                  }}
                 />
-              )}
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='laptop' size={size} />
-                ),
-              }}
-            />
-
-            {/* <Tab.Screen
-              name='Equipment'
-              component={LaptopScreen} // Render the LaptopScreen component directly
-              initialParams={{ userData: userData }} // Pass props via initialParams
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='laptop' size={size} />
-                ),
-              }}
-            /> */}
-
-            <Tab.Screen
-              name='Return'
-              children={() => (
-                <ReturnScreen
-                  userData={userData}
-                  setLoggedIn={setLoggedIn}
-                  setSessionUser={setSessionUser}
+                <Tab.Screen
+                  name='Return'
+                  children={() => (
+                    <ReturnScreen
+                      userData={userData}
+                      setLoggedIn={setLoggedIn}
+                      setSessionUser={setSessionUser}
+                    />
+                  )}
+                  options={{
+                    tabBarIcon: ({ color, size }) => (
+                      <List.Icon color={color} icon='arrow-left' size={size} />
+                    ),
+                  }}
                 />
-              )}
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='arrow-left' size={size} />
-                ),
-              }}
-            />
-
-            {isAdmin() && (
-              <Tab.Screen
-                name='Log'
-                component={LaptopLogScreen}
-                options={{
-                  headerShown: true,
-                  tabBarIcon: ({ color, size }) => (
-                    <List.Icon color={color} icon='history' size={size} />
-                  ),
-                  headerStyle: {
-                    backgroundColor: '#333333', // Set background color if needed
-                  },
-                  headerTitleStyle: {
-                    fontWeight: 'bold', // Customize header title style if needed
-                    color: 'white',
-                    padding: 8,
-                  },
-                }}
-              />
-            )}
-            {/* {isAdmin() && (
-              <Tab.Screen
-                name='Booking'
-                children={() => <BookingScreen userData={userData} />}
-                options={{
-                  tabBarIcon: ({ color, size }) => (
-                    <List.Icon color={color} icon='history' size={size} />
-                  ),
-                  //    headerShown: false, // Add this line to hide the header
-                }}
-              />
-            )} */}
-
-            {isAdmin() && (
-              <Tab.Screen
-                name='Approve'
-                children={() => (
-                  <RequestScreen
-                    userData={userData}
-                    updateApproveNumber={updateApproveNumber}
-                    setLoggedIn={setLoggedIn}
-                    setSessionUser={setSessionUser}
+                {isAdmin() && (
+                  <Tab.Screen
+                    name='Log'
+                    component={LaptopLogScreen}
+                    options={{
+                      headerShown: true,
+                      tabBarIcon: ({ color, size }) => (
+                        <List.Icon color={color} icon='history' size={size} />
+                      ),
+                      headerStyle: {
+                        backgroundColor: '#333333', // Set background color if needed
+                      },
+                      headerTitleStyle: {
+                        fontWeight: 'bold', // Customize header title style if needed
+                        color: 'white',
+                        padding: 8,
+                      },
+                    }}
                   />
                 )}
-                options={{
-                  tabBarIcon: ({ color, size }) => (
-                    <List.Icon color={color} icon='send' size={size} />
-                  ),
-                  // Conditionally render tabBarBadge if approveNumber is more than zero
-                  tabBarBadge: approveNumber > 0 ? approveNumber : null,
-                }}
-              />
-            )}
-            {isOJT() && (
-              <Tab.Screen
-                name='Requests'
-                children={() => (
-                  <RequestScreen
-                    userData={userData}
-                    setLoggedIn={setLoggedIn}
-                    setSessionUser={setSessionUser}
+                {isAdmin() && (
+                  <Tab.Screen
+                    name='Approve'
+                    children={() => (
+                      <RequestScreen
+                        userData={userData}
+                        updateApproveNumber={updateApproveNumber}
+                        setLoggedIn={setLoggedIn}
+                        setSessionUser={setSessionUser}
+                      />
+                    )}
+                    options={{
+                      tabBarIcon: ({ color, size }) => (
+                        <List.Icon color={color} icon='send' size={size} />
+                      ),
+                      tabBarBadge: approveNumber > 0 ? approveNumber : null,
+                    }}
                   />
                 )}
-                options={{
-                  tabBarIcon: ({ color, size }) => (
-                    <List.Icon color={color} icon='send' size={size} />
-                  ),
-                }}
-              />
+                {isOJT() && (
+                  <Tab.Screen
+                    name='Requests'
+                    children={() => (
+                      <RequestScreen
+                        userData={userData}
+                        setLoggedIn={setLoggedIn}
+                        setSessionUser={setSessionUser}
+                      />
+                    )}
+                    options={{
+                      tabBarIcon: ({ color, size }) => (
+                        <List.Icon color={color} icon='send' size={size} />
+                      ),
+                    }}
+                  />
+                )}
+              </>
             )}
-
-            {/* <Tab.Screen
-              name='User'
-              children={() => (
-                <SettingsScreen
-                  userData={userData}
-                  setLoggedIn={setLoggedIn}
-                  setSessionUser={setSessionUser}
+            {userMode === 'Inventory' && (
+              <>
+                {/* Add Tab.Screen components for Inventory mode */}
+                <Tab.Screen
+                  name='Inventory Equipment'
+                  children={() => (
+                    <InventoryScreen
+                      userData={userData}
+                      setLoggedIn={setLoggedIn}
+                      setSessionUser={setSessionUser}
+                    />
+                  )}
+                  options={{
+                    tabBarIcon: ({ color, size }) => (
+                      <List.Icon color={color} icon='archive' size={size} />
+                    ),
+                  }}
                 />
-              )}
-              options={{
-                tabBarIcon: ({ color, size }) => (
-                  <List.Icon color={color} icon='account' size={size} />
-                ),
-              }}
-            /> */}
+                {/* Add more screens as needed for Inventory mode */}
+              </>
+            )}
           </Tab.Navigator>
         ) : (
           <LoginScreen
             setLoggedIn={setLoggedIn}
             setUserSession={setUserSession}
+            changeMode={changeMode}
           />
         )}
       </NavigationContainer>

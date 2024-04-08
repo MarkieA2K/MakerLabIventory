@@ -16,6 +16,7 @@ import {
   Button,
   FAB,
   Divider,
+  Provider,
   Text,
   TextInput,
   Modal as PaperModal,
@@ -27,6 +28,7 @@ import HeaderNav from './component/HeaderNav';
 import styles from './styles';
 
 import { SelectList } from 'react-native-dropdown-select-list';
+import DropDown from 'react-native-paper-dropdown';
 
 const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
   const [laptopData, setLaptopData] = useState([]);
@@ -49,6 +51,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
   const [disabled, setDisabled] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [delDisable, setDelDisable] = useState(false);
+  const [showDropDown, setShowDropDown] = useState(false);
 
   const dropItems = [
     { label: 'Laptop', value: 'Laptop' },
@@ -173,7 +176,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
           // Handle other types of errors here
         }
       } else {
-        console.log('Laptop item added successfully:', data);
+        console.log('item added successfully:', data);
         // Optionally, you can update the local state to reflect the newly added item
         // For example, you can call fetchLaptopData() to refresh the laptop data
         setBorrowButtonDisabled(false);
@@ -707,22 +710,26 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
                   <Divider />
 
                   <View style={{ flexDirection: 'row', flex: 1 }}>
-                    <Button
-                      icon='briefcase-edit'
-                      mode='contained'
-                      onPress={openEdit}
-                      style={styles.optionButton}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      icon='delete'
-                      mode='contained'
-                      onPress={openDelete}
-                      style={styles.optionButton}
-                    >
-                      Delete
-                    </Button>
+                    {isAdmin() && (
+                      <Button
+                        icon='briefcase-edit'
+                        mode='contained'
+                        onPress={openEdit}
+                        style={styles.optionButton}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    {isAdmin() && (
+                      <Button
+                        icon='delete'
+                        mode='contained'
+                        onPress={openDelete}
+                        style={styles.optionButton}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </View>
 
                   {isAdmin() && (
@@ -849,6 +856,20 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
                       {errorMsg}
                     </Text>
                   )}
+                  <DropDown
+                    label={'Category'}
+                    mode={'contained'}
+                    visible={showDropDown}
+                    showDropDown={() => setShowDropDown(true)}
+                    onDismiss={() => setShowDropDown(false)}
+                    value={inputCategory}
+                    setValue={setInputCategory}
+                    list={[
+                      { label: 'Laptop', value: 'Laptop' },
+                      { label: 'Headphones', value: 'Headphones' },
+                      { label: 'Other', value: 'Other' },
+                    ]}
+                  />
                   <TextInput
                     mode='flat'
                     disabled={disabled}
@@ -920,7 +941,8 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
                       console.log(inputCategory);
                     }}
                   /> */}
-                  {!delDisable && (
+
+                  {/* {!delDisable && (
                     <SelectList
                       placeholder='Category'
                       boxStyles={styles.input}
@@ -930,7 +952,9 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
                       save='value'
                       search='false'
                     />
-                  )}
+
+                  )} */}
+
                   <Divider />
                   {isAdd() && (
                     <Button

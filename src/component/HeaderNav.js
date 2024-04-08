@@ -36,6 +36,7 @@ const Header = ({ userData, setLoggedIn }) => {
       <Modal
         animationType='fade' // Change animation to fade
         transparent={true}
+        
         visible={viewSettings}
         onRequestClose={() => setViewSettings(false)}
         onDismiss={() => setViewSettings(false)}
