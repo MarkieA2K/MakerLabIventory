@@ -24,8 +24,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import HeaderNav from './component/HeaderNav';
 import styles from './styles';
 import supabase from './supabase';
-
+import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SelectList } from 'react-native-dropdown-select-list';
+import RNPickerSelect from 'react-native-picker-select';
 
 const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const [inventoryData, setInventoryData] = useState([]);
@@ -35,34 +37,77 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [borrowButtonDisabled, setBorrowButtonDisabled] = useState(false);
   const [borrowLoading, setBorrowLoading] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+
   const [addVisible, setAddVisible] = useState(false);
   const [inputID, setInputID] = useState(null);
   const [inputName, setInputName] = useState(null);
   const [inputBrand, setInputBrand] = useState(null);
   const [inputModel, setInputModel] = useState(null);
   const [inputDesc, setInputDesc] = useState(null);
+  const [inputQuantity, setInputQuantity] = useState(null);
   const [showError, setShowError] = useState(false);
   const [modalMode, setModalMode] = useState(null);
   const [inputCategory, setInputCategory] = useState(null);
+  const [inputSubCategory, setInputSubCategory] = useState(null);
   const [inputFacility, setInputFacility] = useState(null);
   const [disabled, setDisabled] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
   const [delDisable, setDelDisable] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedFacility, setSelectedFacility] = useState(null);
 
   const dropItems = [
     { label: 'Furniture', value: 'Furniture' },
-    { label: 'Appliance', value: 'Appliance' },
-    { label: 'Peripheral', value: 'Peripheral' },
+    { label: 'Electronics', value: 'Electronics' },
+    { label: 'Utility', value: 'Utility' },
+    { label: 'Other', value: 'Other' },
+  ];
+
+  const furnitureSubCategory = [
+    { label: 'Table', value: 'Table' },
+    { label: 'Chair', value: 'Chair' },
+    { label: 'Storage', value: 'Storage' },
+    { label: 'Other', value: 'Other' },
+  ];
+  const utilitySubCategory = [
+    { label: 'Tools', value: 'Tools' },
+    { label: 'Safety', value: 'Safety' },
+    { label: 'First Aid', value: 'First Aid' },
 
     { label: 'Other', value: 'Other' },
   ];
+
+  const electronicsSubCategory = [
+    { label: 'Monitor', value: 'Monitor' },
+    { label: 'Cable', value: 'Cable' },
+    { label: 'Accessory', value: 'Accessory' },
+    { label: 'Other', value: 'Other' },
+  ];
+
+  const otherSubCategory = [{ label: 'Other', value: 'Other' }];
+
+  const getSubcategoryData = () => {
+    switch (inputCategory) {
+      case 'Furniture':
+        return furnitureSubCategory;
+      case 'Electronics':
+        return electronicsSubCategory;
+      case 'Utility':
+        return utilitySubCategory;
+      case 'Other':
+        return otherSubCategory;
+      default:
+        return [];
+    }
+  };
+
   const dropItemsFacility = [
     { label: 'MakerLab', value: 'MakerLab' },
     { label: 'Training Hub', value: 'Training Hub' },
     { label: 'Reception', value: 'Reception' },
-
-    { label: 'Other', value: 'Other' },
+    { label: 'Dining Hall', value: 'Dining Hall' },
+    { label: 'Conference Room', value: 'Conference Room' },
+    { label: 'Others', value: 'Others' },
   ];
 
   const isAdd = () => modalMode === 'Add';
@@ -73,7 +118,14 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
 
   const fetchInventoryData = async () => {
     try {
-      const { data, error } = await supabase.from('InventoryList').select('*');
+      let query = supabase.from('InventoryList').select('*');
+      if (selectedCategory) {
+        query = query.eq('Item_Category', selectedCategory);
+      }
+      if (selectedFacility) {
+        query = query.eq('Item_Facility', selectedFacility);
+      }
+      const { data, error } = await query.select('*');
 
       if (error) {
         console.error('Error fetching inventory data:', error);
@@ -87,13 +139,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
 
   useEffect(() => {
     fetchInventoryData();
-  }, []);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchInventoryData();
-    }, [selectedCategory])
-  );
+  }, [selectedCategory, selectedFacility]);
 
   const handleItemPress = async (item) => {
     try {
@@ -130,6 +176,8 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     setInputModel(selectedItem ? selectedItem.Item_Model : null);
     setInputDesc(selectedItem ? selectedItem.Item_Description : null);
     setInputCategory(selectedItem ? selectedItem.Item_Category : null);
+    setInputSubCategory(selectedItem ? selectedItem.Item_Category : null);
+    setInputQuantity(selectedItem ? selectedItem.Item_Quantity : null);
     setInputFacility(selectedItem ? selectedItem.Item_Facility : null);
   };
   const openDelete = () => {
@@ -146,7 +194,9 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     setInputBrand(selectedItem ? selectedItem.Item_Brand : null);
     setInputModel(selectedItem ? selectedItem.Item_Model : null);
     setInputDesc(selectedItem ? selectedItem.Item_Description : null);
+    setInputQuantity(selectedItem ? selectedItem.Item_Quantity : null);
     setInputCategory(selectedItem ? selectedItem.Item_Category : null);
+    setInputSubCategory(selectedItem ? selectedItem.Item_Category : null);
     setInputFacility(selectedItem ? selectedItem.Item_Facility : null);
   };
 
@@ -154,6 +204,19 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     setModalMode('Add');
     setAddVisible(true);
   };
+
+  const clearAll = () => {
+    setInputID(null);
+    setInputName(null);
+    setInputBrand(null);
+    setInputModel(null);
+    setInputDesc(null);
+    setInputCategory(null);
+    setInputSubCategory(null);
+    setInputFacility(null);
+    setInputQuantity(null);
+  };
+
   const addVerifyHandler = () => {
     try {
       // Check if any form field is empty
@@ -164,7 +227,9 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         !inputModel ||
         !inputDesc ||
         !inputFacility ||
-        !inputCategory
+        !inputCategory ||
+        !inputSubCategory ||
+        !inputQuantity
       ) {
         setErrorMsg('All fields are required');
         return; // Exit the function early if any field is empty
@@ -190,8 +255,11 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
           Item_Model: inputModel,
           Item_Description: inputDesc,
           Item_Category: inputCategory,
+          Item_SubCategory: inputSubCategory,
           Item_Facility: inputFacility,
-          Item_Quantity: 1, // Assuming the default quantity is 1 for a new item
+          Item_Quantity: inputQuantity,
+          Item_User: userData?.User_DisplayName,
+          Date_Added: new Date(),
         },
       ]);
 
@@ -207,6 +275,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
           // Handle other types of errors here
         }
       } else {
+        await addToInventoryLog('Add', inputID, inputName);
         console.log('item added successfully:', data);
         // Optionally, you can update the local state to reflect the newly added item
         // For example, you can call fetchLaptopData() to refresh the laptop data
@@ -216,13 +285,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         setSuccessModalVisible(true);
 
         // Clear the input fields after successful addition
-        setInputID(null);
-        setInputName(null);
-        setInputBrand(null);
-        setInputModel(null);
-        setInputDesc(null);
-        setInputCategory(null);
-        setInputFacility(null);
+        clearAll();
         // Close the modal after adding the item
         setAddVisible(false);
         setModalVisible(false);
@@ -243,8 +306,10 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         !inputBrand ||
         !inputModel ||
         !inputDesc ||
+        !inputFacility ||
         !inputCategory ||
-        !inputFacility
+        !inputSubCategory ||
+        !inputQuantity
       ) {
         setErrorMsg('All fields are required');
         setBorrowButtonDisabled(false);
@@ -261,7 +326,9 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
           Item_Model: inputModel,
           Item_Description: inputDesc,
           Item_Category: inputCategory,
+          Item_SubCategory: inputSubCategory,
           Item_Facility: inputFacility,
+          Item_Quantity: inputQuantity,
         })
         .eq('Item_Id', inputID);
 
@@ -269,6 +336,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         setErrorMsg('Error editing laptop item: ' + error.message);
         // Handle error here
       } else {
+        await addToInventoryLog('Edit', inputID, inputName);
         console.log('Laptop item edited successfully:', data);
         setBorrowButtonDisabled(false);
         setBorrowLoading(false);
@@ -279,13 +347,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         setSuccessModalVisible(true);
 
         // Clear the input fields after successful edition
-        setInputID(null);
-        setInputName(null);
-        setInputBrand(null);
-        setInputModel(null);
-        setInputDesc(null);
-        setInputCategory(null);
-        setInputFacility(null);
+        clearAll();
         // Close the modal after editing the item
         setAddVisible(false);
         setModalVisible(false);
@@ -311,7 +373,13 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
       if (error) {
         console.error('Error deleting laptop item:', error.message);
       } else {
+        await addToInventoryLog(
+          'Delete',
+          selectedItem?.Item_Id,
+          selectedItem?.Item_Name
+        );
         console.log('Laptop item deleted successfully:', data);
+        clearAll();
         setBorrowButtonDisabled(false);
         setBorrowLoading(false);
         // Update the local state to reflect the changes
@@ -325,12 +393,35 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
       console.error('Error deleting laptop item:', error.message);
     }
   };
+  const addToInventoryLog = async (modalMode, itemId, itemName) => {
+    try {
+      const logData = {
+        Item_Id: itemId,
+        Item_Name: itemName,
+        Log_Date: new Date().toISOString(),
+        Log_User: userData?.User_DisplayName,
+        Log_Action: modalMode,
+      };
+
+      const { data, error } = await supabase
+        .from('InventoryLog')
+        .insert([logData]);
+
+      if (error) {
+        console.error('Error adding to InventoryLog:', error.message);
+      } else {
+        console.log('Added to InventoryLog:', data);
+      }
+    } catch (error) {
+      console.error('Error adding to InventoryLog:', error.message);
+    }
+  };
 
   const getItemImage = (category) => {
     switch (category) {
-      case 'Laptop':
-        return require('../assets/LaptopPic.png');
-      case 'Headphones':
+      case 'Furniture':
+        return require('../assets/Furniture.png');
+      case 'Electronics':
         return require('../assets/HeadphonesPic.png');
       default:
         return require('../assets/A2K-LOGO.png');
@@ -353,6 +444,51 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         }
       >
         <View>
+          <View
+            style={{
+              flexDirection: 'row',
+              margin: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.13)',
+              padding: 20,
+              marginHorizontal: 30,
+              borderRadius: 30,
+
+              justifyContent: 'space-evenly',
+            }}
+          >
+            {/* <SelectList
+              placeholder='Select Facility'
+              boxStyles={styles.filterInput}
+              dropdownStyles={styles.input}
+              setSelected={setSelectedFacility}
+              data={dropItemsFacility}
+              save='value'
+            />    
+            <SelectList
+              placeholder='Select Category'
+              boxStyles={styles.filterInput}
+              dropdownStyles={styles.input}
+              setSelected={setSelectedCategory}
+              data={dropItems}
+              save='value'
+            /> */}
+
+            <RNPickerSelect
+              onValueChange={(value) => setSelectedFacility(value)}
+              items={dropItemsFacility}
+              style={pickerSelectStyles}
+              value={selectedFacility}
+              useNativeAndroidPickerStyle={false}
+            />
+
+            <RNPickerSelect
+              onValueChange={(value) => setSelectedCategory(value)}
+              items={dropItems}
+              style={pickerSelectStyles}
+              value={selectedCategory}
+              useNativeAndroidPickerStyle={false}
+            />
+          </View>
           <List.Section>
             {inventoryData.length > 0 ? (
               inventoryData.map((item) => (
@@ -363,12 +499,51 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                   <List.Item
                     title={item.Item_Name}
                     description={item.Item_Description}
-                    left={() => (
-                      <Image
-                        source={getItemImage(item.Item_Category)}
-                        style={styles.icon}
-                      />
-                    )}
+                    left={() => {
+                      let iconName;
+                      switch (item.Item_SubCategory) {
+                        case 'Table':
+                          iconName = 'table-furniture'; // Using "table-furniture" icon for the table subcategory
+                          break;
+                        case 'Chair':
+                          iconName = 'chair-rolling';
+                          break;
+                        case 'Storage':
+                          iconName = 'archive';
+                          break;
+                        case 'Other':
+                          iconName = 'dots-horizontal';
+                          break;
+                        case 'Tools':
+                          iconName = 'tools';
+                          break;
+                        case 'Safety':
+                          iconName = 'fire-extinguisher';
+                          break;
+                        case 'First Aid':
+                          iconName = 'medical-bag';
+                          break;
+                        case 'Monitor':
+                          iconName = 'desktop-mac-dashboard';
+                          break;
+                        case 'Cable':
+                          iconName = 'usb-port';
+                          break;
+                        case 'Accessory':
+                          iconName = 'lightbulb-on';
+                          break;
+                        default:
+                          iconName = 'help';
+                          break;
+                      }
+                      return (
+                        <MaterialCommunityIcons
+                          name={iconName}
+                          size={100}
+                          color='black'
+                        />
+                      );
+                    }}
                     style={styles.listItem}
                     titleStyle={styles.title}
                     descriptionStyle={styles.description}
@@ -423,6 +598,19 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                   <Text style={styles.whiteText}>
                     Model: {selectedItem?.Item_Model}
                   </Text>
+                  <Text style={styles.whiteText}>
+                    Facility: {selectedItem?.Item_Facility}
+                  </Text>
+                  <Text style={styles.whiteText}>
+                    Category: {selectedItem?.Item_Category}
+                  </Text>
+                  <Text style={styles.whiteText}>
+                    Sub Category: {selectedItem?.Item_SubCategory}
+                  </Text>
+                  <Text style={styles.whiteText}>
+                    Quantity: {selectedItem?.Item_Quantity}
+                  </Text>
+
                   {/* <InfoRow label='ID' value={selectedItem?.Laptop_ID} />
                   <InfoRow label='Brand' value={selectedItem?.Laptop_Brand} />
                   <InfoRow label='Model' value={selectedItem?.Laptop_Model} /> */}
@@ -617,6 +805,21 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       console.log(inputDesc);
                     }}
                   />
+
+                  <TextInput
+                    disabled={delDisable}
+                    mode='flat'
+                    label='Quantity'
+                    style={styles.input}
+                    value={inputQuantity !== null ? String(inputQuantity) : ''}
+                    keyboardType='numeric' // Only allows numeric input
+                    onChangeText={(text) => {
+                      // Allow only numbers
+                      const quantity = text.replace(/[^0-9]/g, '');
+                      setInputQuantity(quantity);
+                    }}
+                  />
+
                   {/* <TextInput
                     mode='flat'
                     label='Category'
@@ -627,29 +830,37 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       console.log(inputCategory);
                     }}
                   /> */}
-
                   {!delDisable && (
                     <SelectList
-                      placeholder={inputCategory}
-                      boxStyles={styles.input}
-                      dropdownStyles={styles.input}
-                      setSelected={(val) => setInputCategory(val)}
-                      data={dropItems}
-                      save='value'
-                      search='false'
-                    />
-                  )}
-                  {!delDisable && (
-                    <SelectList
-                      placeholder={inputFacility}
+                      placeholder='Facility'
                       boxStyles={styles.input}
                       dropdownStyles={styles.input}
                       setSelected={(val) => setInputFacility(val)}
                       data={dropItemsFacility}
                       save='value'
-                      search='false'
                     />
                   )}
+                  {!delDisable && (
+                    <SelectList
+                      placeholder='Category'
+                      boxStyles={styles.input}
+                      dropdownStyles={styles.input}
+                      setSelected={(val) => setInputCategory(val)}
+                      data={dropItems}
+                      save='value'
+                    />
+                  )}
+                  {!delDisable && (
+                    <SelectList
+                      placeholder='Sub Category'
+                      boxStyles={styles.input}
+                      dropdownStyles={styles.input}
+                      setSelected={(val) => setInputSubCategory(val)}
+                      data={getSubcategoryData()}
+                      save='value'
+                    />
+                  )}
+
                   {isDelete() && (
                     <TextInput
                       disabled={delDisable}
@@ -722,14 +933,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       setDelDisable(false);
                       setAddVisible(false);
                       setErrorMsg(null);
-
-                      setInputID(null);
-                      setInputName(null);
-                      setInputBrand(null);
-                      setInputModel(null);
-                      setInputDesc(null);
-                      setInputCategory(null);
-                      setInputFacility(null);
+                      clearAll();
                       setShowError(false);
                     }}
                   >
@@ -752,5 +956,35 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     </LinearGradient>
   );
 };
+const pickerSelectStyles = StyleSheet.create({
+  inputIOS: {
+    flex: 1,
+
+    margin: 15,
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'purple',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
+    backgroundColor: 'white',
+  },
+  inputAndroid: {
+    flex: 1,
+
+    margin: 15,
+    fontSize: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 0.5,
+    borderColor: 'purple',
+    borderRadius: 8,
+    color: 'black',
+    paddingRight: 30,
+    backgroundColor: 'white',
+  },
+});
 
 export default InventoryScreen;

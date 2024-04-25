@@ -23,7 +23,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import HeaderNav from './component/HeaderNav';
 import styles from './styles';
 
-const RequestScreen = ({ userData, updateApproveNumber, setLoggedIn }) => {
+const RequestScreen = ({
+  userData,
+  updateApproveNumber,
+  setLoggedIn,
+  changeMode,
+}) => {
   const [requestData, setRequestData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -253,7 +258,11 @@ const RequestScreen = ({ userData, updateApproveNumber, setLoggedIn }) => {
       colors={['#242A3E', '#191D2B', '#0F1016']}
       style={styles.flexview}
     >
-      <HeaderNav userData={userData} setLoggedIn={setLoggedIn} />
+      <HeaderNav
+        userData={userData}
+        setLoggedIn={setLoggedIn}
+        changeMode={changeMode}
+      />
       <ScrollView
         contentContainerStyle={styles.scrollViewContent}
         refreshControl={

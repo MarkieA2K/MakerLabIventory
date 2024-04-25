@@ -30,7 +30,7 @@ import styles from './styles';
 import { SelectList } from 'react-native-dropdown-select-list';
 import DropDown from 'react-native-paper-dropdown';
 
-const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
+const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
   const [laptopData, setLaptopData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -604,7 +604,11 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
       colors={['#242A3E', '#191D2B', '#0F1016']}
       style={styles.flexview}
     >
-      <HeaderNav userData={userData} setLoggedIn={setLoggedIn} />
+      <HeaderNav
+        userData={userData}
+        setLoggedIn={setLoggedIn}
+        changeMode={changeMode}
+      />
       <ScrollView
         contentContainerStyle={styles.scrollViewContent}
         refreshControl={
@@ -942,7 +946,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn }) => {
 
                   {!delDisable && (
                     <SelectList
-                      placeholder={inputCategory}
+                      placeholder='Category'
                       boxStyles={styles.input}
                       dropdownStyles={styles.input}
                       setSelected={(val) => setInputCategory(val)}

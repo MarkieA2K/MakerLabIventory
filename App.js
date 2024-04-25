@@ -21,6 +21,8 @@ import supabase from './src/supabase';
 import LaptopLogScreen from './src/LaptopLogScreen';
 import RequestScreen from './src/RequestScreen';
 import InventoryScreen from './src/InventoryScreen';
+import LogScreen from './src/LogScreen';
+import DashboardScreen from './src/Dashboard';
 // import BookingScreen from './src/BookingScreen';
 
 const Tab = createBottomTabNavigator();
@@ -29,7 +31,7 @@ const customTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: '#606060', // your primary color
+    primary: '#606060', // your primary colorAdmin
     primaryContainer: '#A9A9A9',
     accent: '#FF4081', // your accent color
     background: '#242A3E', // your background color
@@ -116,10 +118,10 @@ const App = () => {
 
       fetchUserData();
     }
-  }, [loggedIn, sessionUser]);
+  }, [loggedIn]);
   useEffect(() => {
     fetchRequestData();
-  }, [approveNumber]);
+  }, [loggedIn]);
 
   const closeWelcomeModal = () => {
     setWelcomeModalVisible(false);
@@ -148,15 +150,14 @@ const App = () => {
                 height: 95,
                 bottom: 10,
                 borderRadius: 50,
-                backgroundColor: 'rgba(255, 255, 255, 0.12)', // Corrected background color
-                borderColor: 'black',
-                borderWidth: 1,
+                backgroundColor: '#333333', // Corrected background color
+
                 padding: 20,
                 paddingBottom: 10,
                 paddingHorizontal: 10,
               },
               tabBarActiveTintColor: '#FFD911',
-              tabBarInactiveTintColor: 'gray',
+              tabBarInactiveTintColor: '#EAEAEA',
               tabBarLabelStyle: {
                 fontSize: 15, // Adjust the font size of the label
                 textAlign: 'center', // Center align the label text
@@ -174,6 +175,7 @@ const App = () => {
                   name='Equipment'
                   children={() => (
                     <LaptopScreen
+                      changeMode={changeMode}
                       userData={userData}
                       setLoggedIn={setLoggedIn}
                       setSessionUser={setSessionUser}
@@ -189,6 +191,7 @@ const App = () => {
                   name='Return'
                   children={() => (
                     <ReturnScreen
+                      changeMode={changeMode}
                       userData={userData}
                       setLoggedIn={setLoggedIn}
                       setSessionUser={setSessionUser}
@@ -200,6 +203,27 @@ const App = () => {
                     ),
                   }}
                 />
+
+                {isAdmin() && (
+                  <Tab.Screen
+                    name='Approve'
+                    children={() => (
+                      <RequestScreen
+                        changeMode={changeMode}
+                        userData={userData}
+                        updateApproveNumber={updateApproveNumber}
+                        setLoggedIn={setLoggedIn}
+                        setSessionUser={setSessionUser}
+                      />
+                    )}
+                    options={{
+                      tabBarIcon: ({ color, size }) => (
+                        <List.Icon color={color} icon='send' size={size} />
+                      ),
+                      tabBarBadge: approveNumber > 0 ? approveNumber : null,
+                    }}
+                  />
+                )}
                 {isAdmin() && (
                   <Tab.Screen
                     name='Log'
@@ -220,30 +244,12 @@ const App = () => {
                     }}
                   />
                 )}
-                {isAdmin() && (
-                  <Tab.Screen
-                    name='Approve'
-                    children={() => (
-                      <RequestScreen
-                        userData={userData}
-                        updateApproveNumber={updateApproveNumber}
-                        setLoggedIn={setLoggedIn}
-                        setSessionUser={setSessionUser}
-                      />
-                    )}
-                    options={{
-                      tabBarIcon: ({ color, size }) => (
-                        <List.Icon color={color} icon='send' size={size} />
-                      ),
-                      tabBarBadge: approveNumber > 0 ? approveNumber : null,
-                    }}
-                  />
-                )}
                 {isOJT() && (
                   <Tab.Screen
                     name='Requests'
                     children={() => (
                       <RequestScreen
+                        changeMode={changeMode}
                         userData={userData}
                         setLoggedIn={setLoggedIn}
                         setSessionUser={setSessionUser}
@@ -262,9 +268,30 @@ const App = () => {
               <>
                 {/* Add Tab.Screen components for Inventory mode */}
                 <Tab.Screen
-                  name='Inventory Equipment'
+                  name='Dashboard'
+                  children={() => (
+                    <DashboardScreen
+                      changeMode={changeMode}
+                      userData={userData}
+                      setLoggedIn={setLoggedIn}
+                      setSessionUser={setSessionUser}
+                    />
+                  )}
+                  options={{
+                    tabBarIcon: ({ color, size }) => (
+                      <List.Icon
+                        color={color}
+                        icon='view-dashboard'
+                        size={size}
+                      />
+                    ),
+                  }}
+                />
+                <Tab.Screen
+                  name='Inventory'
                   children={() => (
                     <InventoryScreen
+                      changeMode={changeMode}
                       userData={userData}
                       setLoggedIn={setLoggedIn}
                       setSessionUser={setSessionUser}
@@ -274,6 +301,25 @@ const App = () => {
                     tabBarIcon: ({ color, size }) => (
                       <List.Icon color={color} icon='archive' size={size} />
                     ),
+                  }}
+                />
+                {/* Add LogScreen component */}
+                <Tab.Screen
+                  name='Log'
+                  component={LogScreen}
+                  options={{
+                    headerShown: true,
+                    tabBarIcon: ({ color, size }) => (
+                      <List.Icon color={color} icon='history' size={size} />
+                    ),
+                    headerStyle: {
+                      backgroundColor: '#333333', // Set background color if needed
+                    },
+                    headerTitleStyle: {
+                      fontWeight: 'bold', // Customize header title style if needed
+                      color: 'white',
+                      padding: 8,
+                    },
                   }}
                 />
                 {/* Add more screens as needed for Inventory mode */}

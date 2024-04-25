@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,8 +7,15 @@ import {
   KeyboardAvoidingView,
   Keyboard,
 } from 'react-native';
-import { TextInput, Button, Modal, IconButton } from 'react-native-paper';
+import {
+  TextInput,
+  Button,
+  Modal,
+  IconButton,
+  Checkbox,
+} from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import supabase from './supabase'; // Import your Supabase client instance
 
 const LoginScreen = ({ setLoggedIn, setUserSession, changeMode }) => {
@@ -18,6 +25,25 @@ const LoginScreen = ({ setLoggedIn, setUserSession, changeMode }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const [userLevel, setUserLevel] = useState(null);
+  const [checked, setChecked] = useState(false);
+
+  const getStoredCredentials = async () => {
+    try {
+      const storedUsername = await AsyncStorage.getItem('username');
+      const storedPassword = await AsyncStorage.getItem('password');
+      if (storedUsername && storedPassword) {
+        setUsername(storedUsername);
+        setPassword(storedPassword);
+        setChecked(true);
+      }
+    } catch (error) {
+      console.error('Error retrieving stored credentials:', error.message);
+    }
+  };
+  useEffect(() => {
+    getStoredCredentials();
+  }, []);
 
   const handleLogin = async () => {
     Keyboard.dismiss();
@@ -41,6 +67,15 @@ const LoginScreen = ({ setLoggedIn, setUserSession, changeMode }) => {
         console.log('Error fetching user data:', error);
         setError('Invalid credentials. Please try again.');
       } else if (data && data.User_ID !== '') {
+        if (checked) {
+          // Store username and password in AsyncStorage
+          await AsyncStorage.setItem('username', username);
+          await AsyncStorage.setItem('password', password);
+        } else {
+          // Remove stored username and password from AsyncStorage
+          await AsyncStorage.removeItem('username');
+          await AsyncStorage.removeItem('password');
+        }
         console.log('tama account');
         setModalVisible(true);
         // setLoggedIn(true);
@@ -69,75 +104,86 @@ const LoginScreen = ({ setLoggedIn, setUserSession, changeMode }) => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior='padding' enabled>
-      <View style={styles.content}>
-        <Image source={require('../assets/A2K-LOGO.png')} style={styles.icon} />
-        <LinearGradient
-          colors={['#191D2B', '#0F1016']}
-          style={styles.formContainer}
+    <View style={styles.content}>
+      <Image source={require('../assets/A2K-LOGO.png')} style={styles.icon} />
+      <LinearGradient
+        colors={['#191D2B', '#0F1016']}
+        style={styles.formContainer}
+      >
+        <TextInput
+          textColor='#EAEAEA'
+          mode='flat'
+          label='Username'
+          value={username}
+          onChangeText={(text) => setUsername(text)}
+          onFocus={() => setError('')}
+          style={styles.input}
+        />
+        <TextInput
+          textColor='#EAEAEA'
+          label='Password'
+          value={password}
+          onChangeText={(text) => setPassword(text)}
+          secureTextEntry={!showPassword}
+          style={styles.input}
+          right={
+            <TextInput.Icon
+              icon={showPassword ? 'eye-off' : 'eye'}
+              onPress={() => setShowPassword(!showPassword)}
+            />
+          }
+        />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{ color: '#707070' }}>Remember Credentials? </Text>
+          <Checkbox
+            status={checked ? 'checked' : 'unchecked'}
+            onPress={() => {
+              setChecked(!checked);
+            }}
+          />
+        </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <Button
+          mode='contained'
+          onPress={handleLogin}
+          style={styles.loginButton}
+          disabled={loading} // Disable the button when loading is true
+          loading={loading} // Show loading indicator when loading is true
         >
-          <TextInput
-            textColor='#EAEAEA'
-            mode='flat'
-            label='Username'
-            value={username}
-            onChangeText={(text) => setUsername(text)}
-            style={styles.input}
-          />
-          <TextInput
-            textColor='#EAEAEA'
-            label='Password'
-            value={password}
-            onChangeText={(text) => setPassword(text)}
-            secureTextEntry={!showPassword}
-            style={styles.input}
-            right={
-              <TextInput.Icon
-                icon={showPassword ? 'eye-off' : 'eye'}
-                onPress={() => setShowPassword(!showPassword)}
-              />
-            }
-          />
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Button
-            mode='contained'
-            onPress={handleLogin}
-            style={styles.loginButton}
-            disabled={loading} // Disable the button when loading is true
-            loading={loading} // Show loading indicator when loading is true
-          >
-            {loading ? 'Logging in...' : 'Login'}
-          </Button>
-        </LinearGradient>
+          {loading ? 'Logging in...' : 'Login'}
+        </Button>
+      </LinearGradient>
 
-        {/* Modal for Equipment Handover and Inventory Options */}
-        <Modal
-          visible={modalVisible}
-          onDismiss={() => setModalVisible(false)}
-          contentContainerStyle={styles.modalContainer}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.buttonContainer}>
+      {/* Modal for Equipment Handover and Inventory Options */}
+      <Modal
+        visible={modalVisible}
+        onDismiss={() => setModalVisible(false)}
+        contentContainerStyle={styles.modalContainer}
+      >
+        <View style={styles.modalContent}>
+          <View style={styles.buttonContainer}>
+            <View style={styles.felxcolumn}>
               <IconButton
                 icon='laptop'
-                color='#1E90FF'
-                size={80}
+                size={100}
                 style={[styles.modalButton, styles.handoverButton]}
                 onPress={handleHandover}
               />
-
+              <Text>Handover</Text>
+            </View>
+            <View style={styles.felxcolumn}>
               <IconButton
                 icon='toolbox'
-                color='#32CD32'
-                size={80}
+                size={100}
                 style={[styles.modalButton, styles.inventoryButton]}
                 onPress={handleInventory}
               />
+              <Text>Inventory</Text>
             </View>
           </View>
-        </Modal>
-      </View>
-    </KeyboardAvoidingView>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
@@ -146,18 +192,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#242a3E', // Background color of the container
   },
+  felxcolumn: { alignItems: 'center', marginHorizontal: 20 },
   content: {
+    backgroundColor: '#242a3E',
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   icon: {
+    borderWidth: 1,
+
     resizeMode: 'contain',
     width: 300,
     height: 270,
   },
   formContainer: {
-    width: '100%',
+    alignItems: 'center',
+    width: '95%',
     padding: 50,
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
@@ -167,8 +218,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF', // Background color of the form container
   },
   input: {
-    marginVertical: 10,
+    marginVertical: 7,
     backgroundColor: 'rgba(255, 255, 255, .08)',
+    width: '100%',
   },
   loginButton: {
     marginTop: 16,
@@ -189,13 +241,10 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
   },
   modalButton: {
-    width: '45%',
     marginBottom: 10,
-    alignItems: 'center',
+
     justifyContent: 'center',
     borderRadius: 8,
     backgroundColor: 'white',

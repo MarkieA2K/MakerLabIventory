@@ -240,7 +240,10 @@ const LaptopLogScreen = ({ navigation }) => {
                     descriptionStyle={styles.description}
                     title={item.Laptop_Name}
                     titleStyle={styles.title}
-                    description={`Borrowed by ${item.Laptop_User}`}
+                    description={`Returned by: ${
+                      item.Laptop_User
+                    } \n ${formatDate(item?.Laptop_SignIn)}`}
+                    // {`Borrowed by ${item.Laptop_User}`}
                     left={() => {
                       switch (item.Category) {
                         case 'Laptop':

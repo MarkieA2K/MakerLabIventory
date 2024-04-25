@@ -29,6 +29,13 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     borderRadius: 20,
   },
+  listItemLog: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 10,
+    marginHorizontal: 30,
+    marginVertical: 10,
+    borderRadius: 20,
+  },
   title: {
     color: '#EAEAEA',
   },
@@ -65,9 +72,10 @@ const styles = StyleSheet.create({
     padding: 40,
     borderRadius: 40,
     color: '#EAEAEA',
-    margin: 1,
+    marginBottom: 100,
   },
   modalHeaderText: {
+    marginTop: 10,
     color: '#FFFFFF', // White color for the text
     marginBottom: 10, // Add margin bottom to separate it from other content
   },
@@ -151,6 +159,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: 'white',
   },
+  filterInput: {
+    borderWidth: 1,
+    borderRadius: 4,
+
+    backgroundColor: 'white',
+  },
+
   loginButton: {
     marginTop: 16,
   },
@@ -158,6 +173,52 @@ const styles = StyleSheet.create({
     color: 'red',
     marginBottom: 16,
   },
+  dashboardCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.13)',
+    marginTop: 100,
+    marginBottom: 110,
+    alignContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+    borderRadius: 50,
+  },
+  filterContainer: {
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  card: {
+    padding: 10,
+    borderRadius: 10,
+    marginVertical: 5,
+    width: '80%',
+    alignItems: 'center',
+  },
+  dashboardItem: {
+    color: '#EAEAEA',
+    fontSize: 16,
+  },
+  facilityCard: { margin: 10, backgroundColor: 'rgba(255, 255, 255, 0.13)' },
+  columnStyle: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.13)',
+
+    margin: 3,
+    flexDirection: 'column',
+    borderRadius: 20,
+
+    alignItems: 'center',
+  },
+  columnStyleInv: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.13)',
+
+    margin: 3,
+    flexDirection: 'column',
+    borderRadius: 20,
+
+    alignItems: 'center',
+  },
+  countStyle: { fontSize: 50, color: '#EAEAEA' },
 });
 
 export default styles;

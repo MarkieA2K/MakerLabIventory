@@ -4,13 +4,15 @@ import { Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons'; // Assuming you are using Expo
 import { MaterialIcons } from '@expo/vector-icons';
 
-const Header = ({ userData, setLoggedIn }) => {
+const Header = ({ userData, setLoggedIn, changeMode }) => {
   const [viewSettings, setViewSettings] = useState(false);
 
   const confirmLogout = () => {
     setLoggedIn(false);
     setViewSettings(false); // Close settings modal after confirming logout
   };
+
+  const confirmLogin = () => {};
 
   const modalVisible = () => {
     setViewSettings(true);
