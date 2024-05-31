@@ -6,7 +6,6 @@ import {
   StyleSheet,
   RefreshControl,
   Image,
-  Alert,
 } from 'react-native';
 import {
   List,
@@ -28,6 +27,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SelectList } from 'react-native-dropdown-select-list';
 import RNPickerSelect from 'react-native-picker-select';
+import * as ImagePicker from 'expo-image-picker';
 
 const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const [inventoryData, setInventoryData] = useState([]);
@@ -55,6 +55,8 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const [delDisable, setDelDisable] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedFacility, setSelectedFacility] = useState(null);
+  const [showDropDown, setShowDropDown] = useState(false);
+  const [image, setImage] = useState();
 
   const dropItems = [
     { label: 'Furniture', value: 'Furniture' },
@@ -116,6 +118,36 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const isAdmin = () => userData?.User_Level === 'ADMIN';
   const isOJT = () => userData?.User_Level === 'OJT';
 
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [3, 3],
+      quality: 1,
+      base64: true,
+    });
+
+    if (!result.cancelled) {
+      const imageBase64 = 'data:image/jpeg;base64,' + result.assets[0].base64;
+
+      setImage(imageBase64);
+      console.log(image);
+    }
+  };
+  const takePhoto = async () => {
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [3, 3],
+      quality: 1,
+      base64: true,
+    });
+
+    if (!result.canceled) {
+      const imageBase64 = 'data:image/jpeg;base64,' + result.assets[0].base64;
+      setImage(imageBase64);
+      // Now this will log the image base64 string
+    }
+  };
   const fetchInventoryData = async () => {
     try {
       let query = supabase.from('InventoryList').select('*');
@@ -176,7 +208,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     setInputModel(selectedItem ? selectedItem.Item_Model : null);
     setInputDesc(selectedItem ? selectedItem.Item_Description : null);
     setInputCategory(selectedItem ? selectedItem.Item_Category : null);
-    setInputSubCategory(selectedItem ? selectedItem.Item_Category : null);
+    setInputSubCategory(selectedItem ? selectedItem.Item_SubCategory : null);
     setInputQuantity(selectedItem ? selectedItem.Item_Quantity : null);
     setInputFacility(selectedItem ? selectedItem.Item_Facility : null);
   };
@@ -472,6 +504,23 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
               data={dropItems}
               save='value'
             /> */}
+            {/* <Dropdown
+              data={dropItemsFacility}
+              labelField='label'
+              valueField='value'
+              value={selectedFacility}
+              onChange={(value) => setSelectedFacility(value)}
+            /> */}
+            {/* <DropDown
+              label={'Facility'}
+              mode={'outlined'}
+              visible={showDropDown}
+              showDropDown={() => setShowDropDown(true)}
+              onDismiss={() => setShowDropDown(false)}
+              value={selectedFacility}
+              setValue={setSelectedFacility}
+              list={dropItemsFacility}
+            /> */}
 
             <RNPickerSelect
               onValueChange={(value) => setSelectedFacility(value)}
@@ -645,17 +694,6 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                     </Button>
                   </View>
 
-                  {isOJT() && (
-                    <Button
-                      mode='contained'
-                      // onPress={requestLaptopHandler}
-                      style={styles.borrowButton}
-                      disabled={borrowButtonDisabled}
-                      loading={borrowLoading}
-                    >
-                      Request
-                    </Button>
-                  )}
                   <Button
                     mode='contained'
                     onPress={closeModal}
@@ -887,6 +925,56 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       }}
                     />
                   )}
+
+                  <Text style={styles.whiteText}>Attatch Image</Text>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-evenly',
+                    }}
+                  >
+                    {!image ? (
+                      <>
+                        <TouchableRipple
+                          style={styles.imageContainer}
+                          onPress={pickImage}
+                        >
+                          <MaterialCommunityIcons
+                            name='image'
+                            size={100}
+                            color='white'
+                          />
+                        </TouchableRipple>
+                        <TouchableRipple
+                          style={styles.imageContainer}
+                          onPress={takePhoto}
+                        >
+                          <MaterialCommunityIcons
+                            name='camera'
+                            size={100}
+                            color='white'
+                          />
+                        </TouchableRipple>
+                      </>
+                    ) : (
+                      <TouchableRipple
+                        style={styles.imageContainer}
+                        onPress={() => {
+                          setImage(null);
+                        }}
+                      >
+                        <View>
+                          <Image source={{ uri: image }} style={styles.image} />
+                          <MaterialCommunityIcons
+                            name='cancel'
+                            size={30}
+                            color='white'
+                            style={styles.editIcon}
+                          />
+                        </View>
+                      </TouchableRipple>
+                    )}
+                  </View>
 
                   <Divider />
                   {isAdd() && (

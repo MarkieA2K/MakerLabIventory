@@ -219,6 +219,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   countStyle: { fontSize: 50, color: '#EAEAEA' },
+  editIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  image: {
+    width: 200,
+    height: 200,
+    margin: 30,
+  },
 });
 
 export default styles;

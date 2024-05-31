@@ -122,11 +122,19 @@ const DashboardScreen = ({ navigation, userData, setLoggedIn }) => {
         item.Item_Facility,
         item.Item_Quantity,
         formatDate(item.Date_Added), // Assuming this is the Date_Added field
+        item.Item_User,
       ]);
 
       // Create worksheet
       const ws = XLSX.utils.aoa_to_sheet([
-        ['Item Name', 'Category', 'Facility', 'Quantity', 'Date Added'],
+        [
+          'Item Name',
+          'Category',
+          'Facility',
+          'Quantity',
+          'Date Added',
+          'Added by',
+        ],
         ...formattedData,
       ]);
       ws['!rows'] = [{ hpx: 40 }]; // Set row height

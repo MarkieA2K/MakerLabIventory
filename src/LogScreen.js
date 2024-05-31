@@ -7,12 +7,14 @@ import {
   Text,
   Divider,
   Button,
+  SegmentedButtons,
 } from 'react-native-paper';
 import supabase from './supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons'; // Import MaterialIcons icon set
 import styles from './styles'; // Importing styles from external file
 import RNPickerSelect from 'react-native-picker-select';
+import HeaderNav from './component/HeaderNav';
 
 const LogScreen = ({ navigation, userData, setLoggedIn }) => {
   const [logData, setLogData] = useState([]);
@@ -23,14 +25,18 @@ const LogScreen = ({ navigation, userData, setLoggedIn }) => {
 
   useEffect(() => {
     fetchLogData();
-  }, []);
+  }, [selectedAction]);
 
   const fetchLogData = async () => {
     try {
-      const { data, error } = await supabase
-        .from('InventoryLog')
+      let query = supabase.from('InventoryLog').select('*');
+      if (selectedAction) {
+        query = query.eq('Log_Action', selectedAction);
+      }
+
+      const { data, error } = await query
         .select('*')
-        .order('Log_Date', { ascending: false }); // Order by timestamp in descending order
+        .order('Log_Date', { ascending: false });
 
       if (error) {
         console.error('Error fetching log data:', error);
@@ -41,6 +47,7 @@ const LogScreen = ({ navigation, userData, setLoggedIn }) => {
       console.error('Error fetching log data:', error.message);
     }
   };
+
   const formatDate = (dateString) => {
     const options = {
       year: 'numeric',
@@ -80,50 +87,98 @@ const LogScreen = ({ navigation, userData, setLoggedIn }) => {
         return 'info'; // Default icon if action is not recognized
     }
   };
+
   const getActionColor = (action) => {
     switch (action) {
       case 'Add':
-        return '#0000FF'; // MaterialIcons icon for Add
+        return '#0000FF'; // Blue for Add
       case 'Edit':
-        return '#008000'; // MaterialIcons icon for Edit
+        return '#008000'; // Green for Edit
       case 'Delete':
-        return '#FF0000'; // MaterialIcons icon for Delete
+        return '#FF0000'; // Red for Delete
       default:
-        return '#EAEAEA'; // Default icon if action is not recognized
+        return '#EAEAEA'; // Default gray for unrecognized actions
     }
   };
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerRightContainer}>
-          {/* Month Picker */}
-          <RNPickerSelect
-            onValueChange={(value) => setSelectedAction(value)}
-            items={[
-              { label: 'Add', value: 'Add' },
-              { label: 'Edit', value: 'Edit' },
-              { label: 'Delete', value: 'Delete' },
-            ]}
-            value={selectedAction}
-            useNativeAndroidPickerStyle={false}
-          />
-        </View>
-      ),
-    });
-  }, [navigation, selectedAction]);
+
+  const handleActionChange = (value) => {
+    setSelectedAction(selectedAction === value ? null : value);
+  };
 
   return (
     <LinearGradient
       colors={['#242A3E', '#191D2B', '#0F1016']}
       style={styles.flexview}
     >
+      <HeaderNav userData={userData} setLoggedIn={setLoggedIn} />
       <View style={styles.flexview}>
         <ScrollView
-          contentContainerStyle={styles.scrollViewContentLog}
+          contentContainerStyle={styles.scrollViewContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
+          <SegmentedButtons
+            style={{ paddingHorizontal: 30, marginVertical: 10 }}
+            value={selectedAction}
+            onValueChange={handleActionChange}
+            buttons={[
+              {
+                value: 'Add',
+                label: 'Add',
+                style: {
+                  backgroundColor: selectedAction === 'Add' ? '#fff' : '#333', // Light background for selected, dark for others
+                  borderColor: '#fff', // White border
+                  borderWidth: 1,
+                },
+                labelStyle: {
+                  color: selectedAction === 'Add' ? '#000' : '#fff', // Black text for selected, white for others
+                  fontWeight: 'bold', // Bold text
+                },
+              },
+              {
+                value: 'Delete',
+                label: 'Delete',
+                style: {
+                  backgroundColor:
+                    selectedAction === 'Delete' ? '#fff' : '#333',
+                  borderColor: '#fff',
+                  borderWidth: 1,
+                },
+                labelStyle: {
+                  color: selectedAction === 'Delete' ? '#000' : '#fff',
+                  fontWeight: 'bold',
+                },
+              },
+              {
+                value: 'Edit',
+                label: 'Edit',
+                style: {
+                  backgroundColor: selectedAction === 'Edit' ? '#fff' : '#333',
+                  borderColor: '#fff',
+                  borderWidth: 1,
+                },
+                labelStyle: {
+                  color: selectedAction === 'Edit' ? '#000' : '#fff',
+                  fontWeight: 'bold',
+                },
+              },
+              {
+                value: 'Use',
+                label: 'Use',
+                style: {
+                  backgroundColor: selectedAction === 'Use' ? '#fff' : '#333',
+                  borderColor: '#fff',
+                  borderWidth: 1,
+                },
+                labelStyle: {
+                  color: selectedAction === 'Use' ? '#000' : '#fff',
+                  fontWeight: 'bold',
+                },
+              },
+            ]}
+          />
+
           {logData.map((item) => (
             <TouchableRipple
               key={item.Log_ID}
@@ -173,6 +228,9 @@ const LogScreen = ({ navigation, userData, setLoggedIn }) => {
 
                 <Text style={styles.whiteText}>
                   User: {selectedItem?.Log_User}
+                </Text>
+                <Text style={styles.whiteText}>
+                  Action: {selectedItem?.Log_Action}
                 </Text>
                 <Text style={styles.whiteText}>
                   Date: {formatDate(selectedItem?.Log_Date)}

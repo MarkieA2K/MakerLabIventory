@@ -20,7 +20,9 @@ import {
   Text,
   TextInput,
   Modal as PaperModal,
+  SegmentedButtons,
 } from 'react-native-paper';
+import * as ImagePicker from 'expo-image-picker';
 import supabase from './supabase';
 import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -56,7 +58,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
   const dropItems = [
     { label: 'Laptop', value: 'Laptop' },
     { label: 'Headphones', value: 'Headphones' },
-    { label: 'Other', value: 'Other' },
+    { label: 'Tools', value: 'Tools' },
   ];
 
   const isAdd = () => {
@@ -598,6 +600,9 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
         return require('../assets/A2K-LOGO.png'); // Default image if category is not recognized
     }
   };
+  const handleCategoryChange = (value) => {
+    setSelectedCategory(selectedCategory === value ? null : value);
+  };
   /////////////////////////////////////////////////////////////////////////////////////////////////
   return (
     <LinearGradient
@@ -618,6 +623,54 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
           />
         }
       >
+        <SegmentedButtons
+          style={{ paddingHorizontal: 30, marginVertical: 10 }}
+          value={selectedCategory}
+          onValueChange={handleCategoryChange}
+          buttons={[
+            {
+              value: 'Laptop',
+              label: 'Laptop',
+              style: {
+                backgroundColor:
+                  selectedCategory === 'Laptop' ? '#fff' : '#333', // Light background for selected, dark for others
+                borderColor: '#fff', // White border
+                borderWidth: 1,
+              },
+              labelStyle: {
+                color: selectedCategory === 'Laptop' ? '#000' : '#fff', // Black text for selected, white for others
+                fontWeight: 'bold', // Bold text
+              },
+            },
+            {
+              value: 'Headphones',
+              label: 'Headphones',
+              style: {
+                backgroundColor:
+                  selectedCategory === 'Headphones' ? '#fff' : '#333',
+                borderColor: '#fff',
+                borderWidth: 1,
+              },
+              labelStyle: {
+                color: selectedCategory === 'Headphones' ? '#000' : '#fff',
+                fontWeight: 'bold',
+              },
+            },
+            {
+              value: 'Tools',
+              label: 'Tools',
+              style: {
+                backgroundColor: selectedCategory === 'Tools' ? '#fff' : '#333',
+                borderColor: '#fff',
+                borderWidth: 1,
+              },
+              labelStyle: {
+                color: selectedCategory === 'Tools' ? '#000' : '#fff',
+                fontWeight: 'bold',
+              },
+            },
+          ]}
+        />
         <View>
           <List.Section>
             {laptopData.length > 0 ? (

@@ -306,20 +306,18 @@ const App = () => {
                 {/* Add LogScreen component */}
                 <Tab.Screen
                   name='Log'
-                  component={LogScreen}
+                  children={() => (
+                    <LogScreen
+                      changeMode={changeMode}
+                      userData={userData}
+                      setLoggedIn={setLoggedIn}
+                      setSessionUser={setSessionUser}
+                    />
+                  )}
                   options={{
-                    headerShown: true,
                     tabBarIcon: ({ color, size }) => (
                       <List.Icon color={color} icon='history' size={size} />
                     ),
-                    headerStyle: {
-                      backgroundColor: '#333333', // Set background color if needed
-                    },
-                    headerTitleStyle: {
-                      fontWeight: 'bold', // Customize header title style if needed
-                      color: 'white',
-                      padding: 8,
-                    },
                   }}
                 />
                 {/* Add more screens as needed for Inventory mode */}
