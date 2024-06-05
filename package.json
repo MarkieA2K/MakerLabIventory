@@ -21,6 +21,7 @@
     "@react-navigation/native": "^6.1.14",
     "@react-navigation/native-stack": "^6.9.22",
     "@supabase/supabase-js": "^2.39.7",
+    "cloudinary-react": "^1.8.1",
     "expo": "^50.0.18",
     "expo-file-system": "^16.0.8",
     "expo-image-picker": "^15.0.5",

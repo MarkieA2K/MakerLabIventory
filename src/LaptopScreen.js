@@ -28,7 +28,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import HeaderNav from './component/HeaderNav';
 import styles from './styles';
-
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { SelectList } from 'react-native-dropdown-select-list';
 import DropDown from 'react-native-paper-dropdown';
 
@@ -54,6 +54,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [delDisable, setDelDisable] = useState(false);
   const [showDropDown, setShowDropDown] = useState(false);
+  const [image, setImage] = useState();
 
   const dropItems = [
     { label: 'Laptop', value: 'Laptop' },
@@ -147,61 +148,128 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
       setRefreshing(false);
     }
   };
+
+  const pickImage = async () => {
+    setBorrowButtonDisabled(true);
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [3, 3],
+      quality: 1,
+      base64: true,
+    });
+
+    if (!result.cancelled) {
+      const imageBase64 = 'data:image/jpeg;base64,' + result.assets[0].base64;
+      console.log(imageBase64);
+      setImage(imageBase64);
+      setBorrowButtonDisabled(false);
+    }
+  };
+  const takePhoto = async () => {
+    setBorrowButtonDisabled(true);
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [3, 3],
+      quality: 1,
+      base64: true,
+    });
+
+    if (!result.cancelled) {
+      const imageBase64 = 'data:image/jpeg;base64,' + result.assets[0].base64;
+      console.log(imageBase64);
+      setImage(imageBase64);
+      setBorrowButtonDisabled(false);
+    }
+  };
   const addLaptopItem = async () => {
+    if (!image) {
+      alert('Please choose an image first');
+      return;
+    }
     setBorrowButtonDisabled(true);
     setBorrowLoading(true);
-    try {
-      // Proceed with inserting the laptop item into the database
-      const { data, error } = await supabase
-        .from('InventoryLaptopList')
-        .insert([
-          {
-            Laptop_ID: inputID,
-            Laptop_Name: inputName,
-            Laptop_Brand: inputBrand,
-            Laptop_Model: inputModel,
-            Laptop_Description: inputDesc,
-            Category: inputCategory,
-            Laptop_Quantity: 1, // Assuming the default quantity is 1 for a new item
-          },
-        ]);
 
-      if (error) {
-        if (
-          error.code === '23505' &&
-          error.constraint === 'InventoryLaptopList_Laptop_ID_key'
-        ) {
-          console.log('Duplicate key violation');
+    const apiUrl = `https://api.cloudinary.com/v1_1/dljhqktls/image/upload`;
+    const formData = new FormData();
+    formData.append('file', image);
+    formData.append('upload_preset', 'Inventory upload'); // Replace with your upload preset
+
+    const config = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    };
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+        config,
+      });
+
+      const data = await response.json();
+      const imageUrl = data.secure_url;
+      const imageId = data.public_id;
+
+      try {
+        // Proceed with inserting the laptop item into the database
+        const { data: laptopData, error: laptopError } = await supabase
+          .from('InventoryLaptopList')
+          .insert([
+            {
+              Laptop_ID: inputID,
+              Laptop_Name: inputName,
+              Laptop_Brand: inputBrand,
+              Laptop_Model: inputModel,
+              Laptop_Description: inputDesc,
+              Category: inputCategory,
+              Laptop_Quantity: 1, // Assuming the default quantity is 1 for a new item
+              Image_URL: imageUrl,
+              Image_ID: imageId,
+            },
+          ]);
+
+        if (laptopError) {
+          if (
+            laptopError.code === '23505' &&
+            laptopError.constraint === 'InventoryLaptopList_Laptop_ID_key'
+          ) {
+            console.log('Duplicate key violation');
+          } else {
+            console.error('Error adding laptop item:', laptopError.message);
+            setShowError(true);
+            setBorrowButtonDisabled(false);
+            setBorrowLoading(false);
+            // Handle other types of errors here
+          }
         } else {
-          console.error('Error adding laptop item:', error.message);
-          setShowError(true);
+          console.log('item added successfully:', laptopData);
+          // Optionally, you can update the local state to reflect the newly added item
+          // For example, you can call fetchLaptopData() to refresh the laptop data
           setBorrowButtonDisabled(false);
           setBorrowLoading(false);
-          // Handle other types of errors here
+          setSuccessModalVisible(true);
+
+          // Clear the input fields after successful addition
+          setInputID(null);
+          setInputName(null);
+          setInputBrand(null);
+          setInputModel(null);
+          setInputDesc(null);
+          setInputCategory(null);
+          setImage(null); // Clear the image state
+          // Close the modal after adding the item
+          setAddVisible(false);
+          setModalVisible(false);
         }
-      } else {
-        console.log('item added successfully:', data);
-        // Optionally, you can update the local state to reflect the newly added item
-        // For example, you can call fetchLaptopData() to refresh the laptop data
-        setBorrowButtonDisabled(false);
-
-        setBorrowLoading(false);
-        setSuccessModalVisible(true);
-
-        // Clear the input fields after successful addition
-        setInputID(null);
-        setInputName(null);
-        setInputBrand(null);
-        setInputModel(null);
-        setInputDesc(null);
-        setInputCategory(null);
-        // Close the modal after adding the item
-        setAddVisible(false);
-        setModalVisible(false);
+      } catch (error) {
+        console.error('Error adding laptop item:', error.message);
+        // Handle other types of errors here
       }
     } catch (error) {
-      console.error('Error adding laptop item:', error.message);
-      // Handle other types of errors here
+      console.error(error);
+      alert('Error uploading image');
     }
   };
   const editHandler = async () => {
@@ -302,6 +370,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
         !inputBrand ||
         !inputModel ||
         !inputDesc ||
+        !image ||
         !inputCategory
       ) {
         setErrorMsg('All fields are required');
@@ -389,6 +458,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
             Laptop_Model: selectedItem?.Laptop_Model,
             Category: selectedItem?.Category,
             Laptop_BorrowDate: formattedDate,
+            Image_URL: selectedItem?.Image_URL,
           },
         ]);
 
@@ -468,6 +538,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
             Laptop_Model: selectedItem?.Laptop_Model,
             Laptop_Brand: selectedItem?.Laptop_Brand,
             Category: selectedItem?.Category,
+            Image_URL: selectedItem?.Image_URL,
 
             Request_Date: formattedDate,
           },
@@ -624,7 +695,7 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
         }
       >
         <SegmentedButtons
-          style={{ paddingHorizontal: 30, marginVertical: 10 }}
+          style={{ paddingHorizontal: 20, marginVertical: 10 }}
           value={selectedCategory}
           onValueChange={handleCategoryChange}
           buttons={[
@@ -698,6 +769,13 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
                               style={styles.icon}
                             />
                           );
+                        case 'Tools':
+                          return (
+                            <Image
+                              source={require('../assets/tool.png')}
+                              style={styles.icon}
+                            />
+                          );
                         // Add more cases for other categories and their corresponding images
                         default:
                           return (
@@ -737,7 +815,11 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
               <ScrollView style={styles.modalContent}>
                 <View style={styles.imageView}>
                   <Image
-                    source={getItemImage(selectedItem?.Category)}
+                    source={
+                      selectedItem?.Image_URL
+                        ? { uri: selectedItem?.Image_URL }
+                        : require('../assets/A2K-LOGO.png')
+                    }
                     style={styles.imageFrame}
                   />
                 </View>
@@ -1021,6 +1103,62 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
                       }}
                     />
                   )}
+                  <View>
+                    <Text style={styles.whiteText}>Attach Image</Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-evenly',
+                      }}
+                    >
+                      {!image ? (
+                        <>
+                          <TouchableRipple
+                            style={styles.imageContainer}
+                            onPress={pickImage}
+                          >
+                            <MaterialCommunityIcons
+                              name='image'
+                              size={100}
+                              color='white'
+                            />
+                          </TouchableRipple>
+                          <TouchableRipple
+                            style={styles.imageContainer}
+                            onPress={takePhoto}
+                          >
+                            <MaterialCommunityIcons
+                              name='camera'
+                              size={100}
+                              color='white'
+                            />
+                          </TouchableRipple>
+                        </>
+                      ) : (
+                        <TouchableRipple
+                          style={styles.imageContainer}
+                          onPress={() => {
+                            setImage(null);
+                          }}
+                        >
+                          <View>
+                            <Image
+                              source={{ uri: image }}
+                              style={styles.image}
+                            />
+                            <MaterialCommunityIcons
+                              name='close'
+                              size={30}
+                              color='white'
+                              style={styles.editIcon}
+                            />
+                          </View>
+                        </TouchableRipple>
+                      )}
+                    </View>
+                  </View>
+
+                  <Divider />
 
                   <Divider />
                   {isAdd() && (

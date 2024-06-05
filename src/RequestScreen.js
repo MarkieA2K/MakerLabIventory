@@ -209,6 +209,7 @@ const RequestScreen = ({
             Laptop_Brand: selectedItem.Laptop_Brand,
             Laptop_Model: selectedItem.Laptop_Model,
             Category: selectedItem.Category,
+            Image_URL: selectedItem?.Image_URL,
             Laptop_BorrowDate: formattedDate,
           },
         ]);
@@ -248,6 +249,8 @@ const RequestScreen = ({
         return require('../assets/LaptopPic.png');
       case 'Headphones':
         return require('../assets/HeadphonesPic.png');
+      case 'Tools':
+        return require('../assets/tool.png');
       // Add more cases for other categories and their corresponding images
       default:
         return require('../assets/A2K-LOGO.png'); // Default image if category is not recognized
@@ -336,7 +339,11 @@ const RequestScreen = ({
             <ScrollView style={styles.modalContent}>
               <View style={styles.imageView}>
                 <Image
-                  source={getItemImage(selectedItem?.Category)}
+                  source={
+                    selectedItem?.Image_URL
+                      ? { uri: selectedItem?.Image_URL }
+                      : require('../assets/A2K-LOGO.png')
+                  }
                   style={styles.imageFrame}
                 />
               </View>

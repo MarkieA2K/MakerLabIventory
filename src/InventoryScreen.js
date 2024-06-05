@@ -57,6 +57,8 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [showDropDown, setShowDropDown] = useState(false);
   const [image, setImage] = useState();
+  const [inputImage, setInputImage] = useState('');
+  const [imageID, setImageID] = useState('');
 
   const dropItems = [
     { label: 'Furniture', value: 'Furniture' },
@@ -119,6 +121,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
   const isOJT = () => userData?.User_Level === 'OJT';
 
   const pickImage = async () => {
+    setBorrowButtonDisabled(true);
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
@@ -129,12 +132,13 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
 
     if (!result.cancelled) {
       const imageBase64 = 'data:image/jpeg;base64,' + result.assets[0].base64;
-
+      console.log(imageBase64);
       setImage(imageBase64);
-      console.log(image);
+      setBorrowButtonDisabled(false);
     }
   };
   const takePhoto = async () => {
+    setBorrowButtonDisabled(true);
     let result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [3, 3],
@@ -142,10 +146,47 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
       base64: true,
     });
 
-    if (!result.canceled) {
+    if (!result.cancelled) {
       const imageBase64 = 'data:image/jpeg;base64,' + result.assets[0].base64;
+      console.log(imageBase64);
       setImage(imageBase64);
-      // Now this will log the image base64 string
+      setBorrowButtonDisabled(false);
+    }
+  };
+  const uploadImage = async () => {
+    if (!image) {
+      alert('Please choose an image first');
+      return;
+    }
+
+    const apiUrl = `https://api.cloudinary.com/v1_1/dljhqktls/image/upload`;
+    const formData = new FormData();
+    formData.append('file', image);
+    formData.append('upload_preset', 'Inventory upload'); // Replace with your upload preset
+
+    const config = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    };
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+        config,
+      });
+
+      const data = await response.json();
+      console.log(data);
+      const imageUrl = data.secure_url;
+      const imageId = data.public_id;
+      setInputImage(imageUrl);
+      setImageID(imageId);
+      alert(`Image uploaded successfully! Image URL: ${imageUrl}`);
+    } catch (error) {
+      console.error(error);
+      alert('Error uploading image');
     }
   };
   const fetchInventoryData = async () => {
@@ -211,6 +252,8 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     setInputSubCategory(selectedItem ? selectedItem.Item_SubCategory : null);
     setInputQuantity(selectedItem ? selectedItem.Item_Quantity : null);
     setInputFacility(selectedItem ? selectedItem.Item_Facility : null);
+    setImage(selectedItem ? selectedItem.Image_URL : null);
+    setInputImage(selectedItem ? selectedItem.Image_URL : null);
   };
   const openDelete = () => {
     setDelDisable(true);
@@ -247,9 +290,10 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
     setInputSubCategory(null);
     setInputFacility(null);
     setInputQuantity(null);
+    setImage(null);
   };
 
-  const addVerifyHandler = () => {
+  const addVerifyHandler = async () => {
     try {
       // Check if any form field is empty
       if (
@@ -259,7 +303,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         !inputModel ||
         !inputDesc ||
         !inputFacility ||
-        !inputCategory ||
+        !image ||
         !inputSubCategory ||
         !inputQuantity
       ) {
@@ -267,64 +311,99 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         return; // Exit the function early if any field is empty
       }
 
-      // Call the function to add the laptop item
-      addItem();
+      addItem(); // Proceed to addItem only after uploadImage is complete
     } catch (error) {
       console.error('Error verifying form data:', error.message);
       // Handle other types of errors here
     }
   };
   const addItem = async () => {
+    if (!image) {
+      alert('Please choose an image first');
+      return;
+    }
     setBorrowButtonDisabled(true);
     setBorrowLoading(true);
+
+    const apiUrl = `https://api.cloudinary.com/v1_1/dljhqktls/image/upload`;
+    const formData = new FormData();
+    formData.append('file', image);
+    formData.append('upload_preset', 'Inventory upload'); // Replace with your upload preset
+
+    const config = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    };
+
     try {
-      // Proceed with inserting the laptop item into the database
-      const { data, error } = await supabase.from('InventoryList').insert([
-        {
-          Item_Id: inputID,
-          Item_Name: inputName,
-          Item_Brand: inputBrand,
-          Item_Model: inputModel,
-          Item_Description: inputDesc,
-          Item_Category: inputCategory,
-          Item_SubCategory: inputSubCategory,
-          Item_Facility: inputFacility,
-          Item_Quantity: inputQuantity,
-          Item_User: userData?.User_DisplayName,
-          Date_Added: new Date(),
-        },
-      ]);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+        config,
+      });
 
-      if (error) {
-        if (
-          error.code === '23505' &&
-          error.constraint === 'InventoryLaptopList_Laptop_ID_key'
-        ) {
-          console.log('Duplicate key violation');
+      const data = await response.json();
+      const imageUrl = data.secure_url;
+      const imageId = data.public_id;
+
+      setInputImage(imageUrl);
+      setImageID(imageId);
+
+      try {
+        // Proceed with inserting the laptop item into the database
+        const { data, error } = await supabase.from('InventoryList').insert([
+          {
+            Item_Id: inputID,
+            Item_Name: inputName,
+            Item_Brand: inputBrand,
+            Item_Model: inputModel,
+            Item_Description: inputDesc,
+            Item_Category: inputCategory,
+            Item_SubCategory: inputSubCategory,
+            Item_Facility: inputFacility,
+            Item_Quantity: inputQuantity,
+            Item_Quantity: inputQuantity,
+            Item_User: userData?.User_DisplayName,
+            Image_URL: imageUrl,
+            Image_ID: imageId,
+            Date_Added: new Date(),
+          },
+        ]);
+
+        if (error) {
+          if (
+            error.code === '23505' &&
+            error.constraint === 'InventoryLaptopList_Laptop_ID_key'
+          ) {
+            console.log('Duplicate key violation');
+          } else {
+            console.error('Error adding laptop item:', error.message);
+            setShowError(true);
+            // Handle other types of errors here
+          }
         } else {
-          console.error('Error adding laptop item:', error.message);
-          setShowError(true);
-          // Handle other types of errors here
+          await addToInventoryLog('Add', inputID, inputName);
+          console.log('item added successfully:', data);
+          // Optionally, you can update the local state to reflect the newly added item
+          // For example, you can call fetchLaptopData() to refresh the laptop data
+          setBorrowButtonDisabled(false);
+          setBorrowLoading(false);
+          setSuccessModalVisible(true);
+
+          // Clear the input fields after successful addition
+          clearAll();
+          // Close the modal after adding the item
+          setAddVisible(false);
+          setModalVisible(false);
         }
-      } else {
-        await addToInventoryLog('Add', inputID, inputName);
-        console.log('item added successfully:', data);
-        // Optionally, you can update the local state to reflect the newly added item
-        // For example, you can call fetchLaptopData() to refresh the laptop data
-        setBorrowButtonDisabled(false);
-
-        setBorrowLoading(false);
-        setSuccessModalVisible(true);
-
-        // Clear the input fields after successful addition
-        clearAll();
-        // Close the modal after adding the item
-        setAddVisible(false);
-        setModalVisible(false);
+      } catch (error) {
+        console.error('Error adding laptop item:', error.message);
+        // Handle other types of errors here
       }
     } catch (error) {
-      console.error('Error adding laptop item:', error.message);
-      // Handle other types of errors here
+      console.error(error);
+      alert('Error uploading image');
     }
   };
   const editHandler = async () => {
@@ -373,6 +452,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         setBorrowButtonDisabled(false);
         setBorrowLoading(false);
         setDisabled(false);
+
         setErrorMsg(null);
         // Optionally, you can update the local state to reflect the changes
         // For example, you can call fetchLaptopData() to refresh the laptop data
@@ -414,6 +494,8 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         clearAll();
         setBorrowButtonDisabled(false);
         setBorrowLoading(false);
+        setDisabled(false);
+        setDelDisable(false);
         // Update the local state to reflect the changes
 
         // Close the modal after deleting the item
@@ -622,7 +704,11 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
               <ScrollView style={styles.modalContent}>
                 <View style={styles.imageView}>
                   <Image
-                    source={getItemImage(selectedItem?.Category)}
+                    source={
+                      selectedItem?.Image_URL
+                        ? { uri: selectedItem?.Image_URL }
+                        : require('../assets/A2K-LOGO.png')
+                    }
                     style={styles.imageFrame}
                   />
                 </View>
@@ -926,54 +1012,59 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                     />
                   )}
 
-                  <Text style={styles.whiteText}>Attatch Image</Text>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-evenly',
-                    }}
-                  >
-                    {!image ? (
-                      <>
+                  <View>
+                    <Text style={styles.whiteText}>Attach Image</Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-evenly',
+                      }}
+                    >
+                      {!image ? (
+                        <>
+                          <TouchableRipple
+                            style={styles.imageContainer}
+                            onPress={pickImage}
+                          >
+                            <MaterialCommunityIcons
+                              name='image'
+                              size={100}
+                              color='white'
+                            />
+                          </TouchableRipple>
+                          <TouchableRipple
+                            style={styles.imageContainer}
+                            onPress={takePhoto}
+                          >
+                            <MaterialCommunityIcons
+                              name='camera'
+                              size={100}
+                              color='white'
+                            />
+                          </TouchableRipple>
+                        </>
+                      ) : (
                         <TouchableRipple
                           style={styles.imageContainer}
-                          onPress={pickImage}
+                          onPress={() => {
+                            setImage(null);
+                          }}
                         >
-                          <MaterialCommunityIcons
-                            name='image'
-                            size={100}
-                            color='white'
-                          />
+                          <View>
+                            <Image
+                              source={{ uri: image }}
+                              style={styles.image}
+                            />
+                            <MaterialCommunityIcons
+                              name='close'
+                              size={30}
+                              color='white'
+                              style={styles.editIcon}
+                            />
+                          </View>
                         </TouchableRipple>
-                        <TouchableRipple
-                          style={styles.imageContainer}
-                          onPress={takePhoto}
-                        >
-                          <MaterialCommunityIcons
-                            name='camera'
-                            size={100}
-                            color='white'
-                          />
-                        </TouchableRipple>
-                      </>
-                    ) : (
-                      <TouchableRipple
-                        style={styles.imageContainer}
-                        onPress={() => {
-                          setImage(null);
-                        }}
-                      >
-                        <View>
-                          <Image source={{ uri: image }} style={styles.image} />
-                          <MaterialCommunityIcons
-                            name='cancel'
-                            size={30}
-                            color='white'
-                            style={styles.editIcon}
-                          />
-                        </View>
-                      </TouchableRipple>
-                    )}
+                      )}
+                    </View>
                   </View>
 
                   <Divider />
@@ -989,6 +1080,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
                       Add Item
                     </Button>
                   )}
+
                   {isEdit() && (
                     <Button
                       disabled={borrowButtonDisabled}

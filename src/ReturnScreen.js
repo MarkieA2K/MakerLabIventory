@@ -198,18 +198,6 @@ const ReturnScreen = ({ userData, setLoggedIn, changeMode }) => {
     return new Date(dateString).toLocaleString(undefined, options);
   };
 
-  const getItemImage = (category) => {
-    switch (category) {
-      case 'Laptop':
-        return require('../assets/LaptopPic.png');
-      case 'Headphones':
-        return require('../assets/HeadphonesPic.png');
-      // Add more cases for other categories and their corresponding images
-      default:
-        return require('../assets/A2K-LOGO.png'); // Default image if category is not recognized
-    }
-  };
-
   return (
     <LinearGradient
       colors={['#242A3E', '#191D2B', '#0F1016']}
@@ -253,6 +241,13 @@ const ReturnScreen = ({ userData, setLoggedIn, changeMode }) => {
                               style={styles.icon}
                             />
                           );
+                        case 'Tools':
+                          return (
+                            <Image
+                              source={require('../assets/tool.png')}
+                              style={styles.icon}
+                            />
+                          );
                         // Add more cases for other categories and their corresponding images
                         default:
                           return (
@@ -291,7 +286,11 @@ const ReturnScreen = ({ userData, setLoggedIn, changeMode }) => {
               <ScrollView style={styles.modalContent}>
                 <View style={styles.imageView}>
                   <Image
-                    source={getItemImage(selectedItem?.Category)}
+                    source={
+                      selectedItem?.Image_URL
+                        ? { uri: selectedItem?.Image_URL }
+                        : require('../assets/A2K-LOGO.png')
+                    }
                     style={styles.imageFrame}
                   />
                 </View>

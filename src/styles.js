@@ -83,11 +83,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   imageFrame: {
-    width: 200, // Adjust the width to make it smaller
-    height: 200, // Adjust the height to make it smaller
+    width: 300, // Adjust the width to make it smaller
+    height: 300, // Adjust the height to make it smaller
 
     borderWidth: 1,
     resizeMode: 'contain',
+    marginBottom: 20,
   },
   infoRow: {
     flexDirection: 'row',
