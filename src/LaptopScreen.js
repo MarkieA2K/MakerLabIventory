@@ -332,6 +332,34 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
       // Handle other types of errors here
     }
   };
+
+  const updateImage = async () => {
+    try {
+      console.log('Uploading new image to Cloudinary...');
+      // Construct the Cloudinary API URL
+      const apiUrl = `https://api.cloudinary.com/v1_1/dljhqktls/image/upload`;
+      const formData = new FormData();
+      formData.append('file', image);
+      formData.append('upload_preset', 'Inventory upload'); // Replace with your upload preset
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await response.json();
+      console.log('Image uploaded successfully:', data); // Log successful upload
+      return data;
+    } catch (error) {
+      console.error('Error uploading image:', error.message);
+      throw error;
+    }
+  };
+
   const deleteHandler = async () => {
     try {
       setBorrowButtonDisabled(true);
@@ -1157,6 +1185,19 @@ const LaptopScreen = ({ navigation, userData, setLoggedIn, changeMode }) => {
                       )}
                     </View>
                   </View>
+
+                  {isEdit() && (
+                    <Button
+                      disabled={borrowButtonDisabled}
+                      loading={borrowLoading}
+                      style={styles.closeButton}
+                      mode='contained'
+                      onPress={updateImage}
+                      icon='briefcase-edit'
+                    >
+                      Update Image
+                    </Button>
+                  )}
 
                   <Divider />
 

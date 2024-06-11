@@ -126,12 +126,6 @@ const LoginScreen = ({ setLoggedIn, setUserSession, changeMode }) => {
           onChangeText={(text) => setPassword(text)}
           secureTextEntry={!showPassword}
           style={styles.input}
-          right={
-            <TextInput.Icon
-              icon={showPassword ? 'eye-off' : 'eye'}
-              onPress={() => setShowPassword(!showPassword)}
-            />
-          }
         />
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Text style={{ color: '#707070' }}>Remember Credentials? </Text>

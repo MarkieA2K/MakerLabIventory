@@ -13,7 +13,6 @@ import {
 } from 'react-native-paper';
 import { Image, StyleSheet } from 'react-native';
 
-import SettingsScreen from './src/SettingsScreen';
 import LoginScreen from './src/LoginScreen';
 import LaptopScreen from './src/LaptopScreen';
 import ReturnScreen from './src/ReturnScreen';
@@ -23,7 +22,6 @@ import RequestScreen from './src/RequestScreen';
 import InventoryScreen from './src/InventoryScreen';
 import LogScreen from './src/LogScreen';
 import DashboardScreen from './src/Dashboard';
-// import BookingScreen from './src/BookingScreen';
 
 const Tab = createBottomTabNavigator();
 
