@@ -20,9 +20,11 @@ import * as XLSX from 'xlsx';
 import { Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Header from './component/HeaderLog';
+import { SelectList } from 'react-native-dropdown-select-list';
+import HeaderNav from './component/HeaderNav';
 
 import styles from './styles';
-const LaptopLogScreen = ({ navigation }) => {
+const LaptopLogScreen = ({ navigation, userData, setLoggedIn }) => {
   const [logData, setLogData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -164,51 +166,6 @@ const LaptopLogScreen = ({ navigation }) => {
     return new Date(dateString).toLocaleString(undefined, options);
   };
 
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <View style={styles.headerRightContainer}>
-          {/* Month Picker */}
-          <RNPickerSelect
-            onValueChange={(value) => setSelectedMonth(value)}
-            items={[
-              { label: 'January', value: 'January' },
-              { label: 'February', value: 'February' },
-              { label: 'March', value: 'March' },
-              { label: 'April', value: 'April' },
-              { label: 'May', value: 'May' },
-              { label: 'June', value: 'June' },
-              { label: 'July', value: 'July' },
-              { label: 'August', value: 'August' },
-              { label: 'September', value: 'September' },
-              { label: 'October', value: 'October' },
-              { label: 'November', value: 'November' },
-              { label: 'December', value: 'December' },
-            ]}
-            style={pickerSelectStyles}
-            value={selectedMonth}
-            useNativeAndroidPickerStyle={false}
-          />
-
-          {/* Year Picker */}
-          <RNPickerSelect
-            onValueChange={(value) => setSelectedYear(value)}
-            items={[
-              { label: '2024', value: '2024' },
-              { label: '2025', value: '2025' },
-              { label: '2026', value: '2026' },
-
-              // Add more years as needed
-            ]}
-            style={pickerSelectStyles}
-            value={selectedYear}
-            useNativeAndroidPickerStyle={false}
-          />
-        </View>
-      ),
-    });
-  }, [navigation, selectedMonth, selectedYear, exporting]);
-
   const getItemImage = (category) => {
     switch (category) {
       case 'Laptop':
@@ -226,8 +183,57 @@ const LaptopLogScreen = ({ navigation }) => {
       colors={['#242A3E', '#191D2B', '#0F1016']}
       style={styles.flexview}
     >
+      <HeaderNav userData={userData} setLoggedIn={setLoggedIn} />
       <View style={styles.flexview}>
-        <ScrollView contentContainerStyle={styles.scrollViewContentLog}>
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          <View
+            style={{
+              flexDirection: 'row',
+              margin: 10,
+              backgroundColor: 'rgba(255, 255, 255, 0.13)',
+              padding: 20,
+              marginHorizontal: 30,
+              borderRadius: 30,
+
+              justifyContent: 'space-evenly',
+            }}
+          >
+            <SelectList
+              placeholder='Select Month'
+              boxStyles={styles.filterInput}
+              dropdownStyles={styles.input}
+              setSelected={setSelectedMonth}
+              data={[
+                { label: 'January', value: 'January' },
+                { label: 'February', value: 'February' },
+                { label: 'March', value: 'March' },
+                { label: 'April', value: 'April' },
+                { label: 'May', value: 'May' },
+                { label: 'June', value: 'June' },
+                { label: 'July', value: 'July' },
+                { label: 'August', value: 'August' },
+                { label: 'September', value: 'September' },
+                { label: 'October', value: 'October' },
+                { label: 'November', value: 'November' },
+                { label: 'December', value: 'December' },
+              ]}
+              save='value'
+            />
+
+            <SelectList
+              placeholder='Select Year'
+              boxStyles={styles.filterInput}
+              dropdownStyles={styles.input}
+              setSelected={setSelectedYear}
+              data={[
+                { label: '2024', value: '2024' },
+                { label: '2025', value: '2025' },
+                { label: '2026', value: '2026' },
+                // Add more years as needed
+              ]}
+              save='value'
+            />
+          </View>
           <List.Section>
             {logData.length > 0 ? (
               logData.map((item) => (

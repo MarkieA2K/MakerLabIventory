@@ -11,8 +11,8 @@ import {
   Button,
   List,
 } from 'react-native-paper';
-import { Image, StyleSheet } from 'react-native';
-
+import { Image, StyleSheet, StatusBar } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import LoginScreen from './src/LoginScreen';
 import LaptopScreen from './src/LaptopScreen';
 import ReturnScreen from './src/ReturnScreen';
@@ -135,225 +135,236 @@ const App = () => {
   };
 
   return (
-    <PaperProvider theme={customTheme}>
-      <NavigationContainer>
-        {loggedIn ? (
-          <Tab.Navigator
-            screenOptions={{
-              headerShown: false,
-              tabBarStyle: {
-                position: 'absolute',
-                elevation: 0,
-                marginHorizontal: 17,
-                height: 95,
-                bottom: 10,
-                borderRadius: 50,
-                backgroundColor: '#333333', // Corrected background color
+    <SafeAreaProvider>
+      <PaperProvider theme={customTheme}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <NavigationContainer>
+            <StatusBar hidden={true} />
+            {loggedIn ? (
+              <Tab.Navigator
+                screenOptions={{
+                  headerShown: false,
+                  tabBarStyle: {
+                    position: 'absolute',
+                    elevation: 0,
+                    marginHorizontal: 17,
+                    height: 95,
+                    bottom: 10,
+                    borderRadius: 50,
+                    backgroundColor: '#333333', // Corrected background color
 
-                padding: 20,
-                paddingBottom: 10,
-                paddingHorizontal: 10,
-              },
-              tabBarActiveTintColor: '#FFD911',
-              tabBarInactiveTintColor: '#EAEAEA',
-              tabBarLabelStyle: {
-                fontSize: 15, // Adjust the font size of the label
-                textAlign: 'center', // Center align the label text
-                marginBottom: 5, // Add margin to the bottom of the label
-              },
-              tabBarIconStyle: {
-                width: 60, // Adjust the width of the icon
-                height: 60, // Adjust the height of the icon
-              },
-            }}
-          >
-            {userMode === 'Handover' && (
-              <>
-                <Tab.Screen
-                  name='Equipment'
-                  children={() => (
-                    <LaptopScreen
-                      changeMode={changeMode}
-                      userData={userData}
-                      setLoggedIn={setLoggedIn}
-                      setSessionUser={setSessionUser}
+                    padding: 20,
+                    paddingBottom: 10,
+                    paddingHorizontal: 10,
+                  },
+                  tabBarActiveTintColor: '#FFD911',
+                  tabBarInactiveTintColor: '#EAEAEA',
+                  tabBarLabelStyle: {
+                    fontSize: 15, // Adjust the font size of the label
+                    textAlign: 'center', // Center align the label text
+                    marginBottom: 5, // Add margin to the bottom of the label
+                  },
+                  tabBarIconStyle: {
+                    width: 60, // Adjust the width of the icon
+                    height: 60, // Adjust the height of the icon
+                  },
+                }}
+              >
+                {userMode === 'Handover' && (
+                  <>
+                    <Tab.Screen
+                      name='Equipment'
+                      children={() => (
+                        <LaptopScreen
+                          changeMode={changeMode}
+                          userData={userData}
+                          setLoggedIn={setLoggedIn}
+                          setSessionUser={setSessionUser}
+                        />
+                      )}
+                      options={{
+                        tabBarIcon: ({ color, size }) => (
+                          <List.Icon color={color} icon='laptop' size={size} />
+                        ),
+                      }}
                     />
-                  )}
-                  options={{
-                    tabBarIcon: ({ color, size }) => (
-                      <List.Icon color={color} icon='laptop' size={size} />
-                    ),
-                  }}
-                />
-                <Tab.Screen
-                  name='Return'
-                  children={() => (
-                    <ReturnScreen
-                      changeMode={changeMode}
-                      userData={userData}
-                      setLoggedIn={setLoggedIn}
-                      setSessionUser={setSessionUser}
+                    <Tab.Screen
+                      name='Return'
+                      children={() => (
+                        <ReturnScreen
+                          changeMode={changeMode}
+                          userData={userData}
+                          setLoggedIn={setLoggedIn}
+                          setSessionUser={setSessionUser}
+                        />
+                      )}
+                      options={{
+                        tabBarIcon: ({ color, size }) => (
+                          <List.Icon
+                            color={color}
+                            icon='arrow-left'
+                            size={size}
+                          />
+                        ),
+                      }}
                     />
-                  )}
-                  options={{
-                    tabBarIcon: ({ color, size }) => (
-                      <List.Icon color={color} icon='arrow-left' size={size} />
-                    ),
-                  }}
-                />
 
-                {isAdmin() && (
-                  <Tab.Screen
-                    name='Approve'
-                    children={() => (
-                      <RequestScreen
-                        changeMode={changeMode}
-                        userData={userData}
-                        updateApproveNumber={updateApproveNumber}
-                        setLoggedIn={setLoggedIn}
-                        setSessionUser={setSessionUser}
+                    {isAdmin() && (
+                      <Tab.Screen
+                        name='Approve'
+                        children={() => (
+                          <RequestScreen
+                            changeMode={changeMode}
+                            userData={userData}
+                            updateApproveNumber={updateApproveNumber}
+                            setLoggedIn={setLoggedIn}
+                            setSessionUser={setSessionUser}
+                          />
+                        )}
+                        options={{
+                          tabBarIcon: ({ color, size }) => (
+                            <List.Icon color={color} icon='send' size={size} />
+                          ),
+                          tabBarBadge: approveNumber > 0 ? approveNumber : null,
+                        }}
                       />
                     )}
-                    options={{
-                      tabBarIcon: ({ color, size }) => (
-                        <List.Icon color={color} icon='send' size={size} />
-                      ),
-                      tabBarBadge: approveNumber > 0 ? approveNumber : null,
-                    }}
-                  />
-                )}
-                {isAdmin() && (
-                  <Tab.Screen
-                    name='Log'
-                    component={LaptopLogScreen}
-                    options={{
-                      headerShown: true,
-                      tabBarIcon: ({ color, size }) => (
-                        <List.Icon color={color} icon='history' size={size} />
-                      ),
-                      headerStyle: {
-                        backgroundColor: '#333333', // Set background color if needed
-                      },
-                      headerTitleStyle: {
-                        fontWeight: 'bold', // Customize header title style if needed
-                        color: 'white',
-                        padding: 8,
-                      },
-                    }}
-                  />
-                )}
-                {isOJT() && (
-                  <Tab.Screen
-                    name='Requests'
-                    children={() => (
-                      <RequestScreen
-                        changeMode={changeMode}
-                        userData={userData}
-                        setLoggedIn={setLoggedIn}
-                        setSessionUser={setSessionUser}
+                    {isAdmin() && (
+                      <Tab.Screen
+                        name='Log'
+                        children={() => (
+                          <LaptopLogScreen
+                            changeMode={changeMode}
+                            userData={userData}
+                            updateApproveNumber={updateApproveNumber}
+                            setLoggedIn={setLoggedIn}
+                            setSessionUser={setSessionUser}
+                          />
+                        )}
+                        options={{
+                          tabBarIcon: ({ color, size }) => (
+                            <List.Icon
+                              color={color}
+                              icon='history'
+                              size={size}
+                            />
+                          ),
+                        }}
                       />
                     )}
-                    options={{
-                      tabBarIcon: ({ color, size }) => (
-                        <List.Icon color={color} icon='send' size={size} />
-                      ),
-                    }}
-                  />
-                )}
-              </>
-            )}
-            {userMode === 'Inventory' && (
-              <>
-                {/* Add Tab.Screen components for Inventory mode */}
-                <Tab.Screen
-                  name='Dashboard'
-                  children={() => (
-                    <DashboardScreen
-                      changeMode={changeMode}
-                      userData={userData}
-                      setLoggedIn={setLoggedIn}
-                      setSessionUser={setSessionUser}
-                    />
-                  )}
-                  options={{
-                    tabBarIcon: ({ color, size }) => (
-                      <List.Icon
-                        color={color}
-                        icon='view-dashboard'
-                        size={size}
+                    {isOJT() && (
+                      <Tab.Screen
+                        name='Requests'
+                        children={() => (
+                          <RequestScreen
+                            changeMode={changeMode}
+                            userData={userData}
+                            setLoggedIn={setLoggedIn}
+                            setSessionUser={setSessionUser}
+                          />
+                        )}
+                        options={{
+                          tabBarIcon: ({ color, size }) => (
+                            <List.Icon color={color} icon='send' size={size} />
+                          ),
+                        }}
                       />
-                    ),
-                  }}
-                />
-                <Tab.Screen
-                  name='Inventory'
-                  children={() => (
-                    <InventoryScreen
-                      changeMode={changeMode}
-                      userData={userData}
-                      setLoggedIn={setLoggedIn}
-                      setSessionUser={setSessionUser}
+                    )}
+                  </>
+                )}
+                {userMode === 'Inventory' && (
+                  <>
+                    {/* Add Tab.Screen components for Inventory mode */}
+                    <Tab.Screen
+                      name='Dashboard'
+                      children={() => (
+                        <DashboardScreen
+                          changeMode={changeMode}
+                          userData={userData}
+                          setLoggedIn={setLoggedIn}
+                          setSessionUser={setSessionUser}
+                        />
+                      )}
+                      options={{
+                        tabBarIcon: ({ color, size }) => (
+                          <List.Icon
+                            color={color}
+                            icon='view-dashboard'
+                            size={size}
+                          />
+                        ),
+                      }}
                     />
-                  )}
-                  options={{
-                    tabBarIcon: ({ color, size }) => (
-                      <List.Icon color={color} icon='archive' size={size} />
-                    ),
-                  }}
-                />
-                {/* Add LogScreen component */}
-                <Tab.Screen
-                  name='Log'
-                  children={() => (
-                    <LogScreen
-                      changeMode={changeMode}
-                      userData={userData}
-                      setLoggedIn={setLoggedIn}
-                      setSessionUser={setSessionUser}
+                    <Tab.Screen
+                      name='Inventory'
+                      children={() => (
+                        <InventoryScreen
+                          changeMode={changeMode}
+                          userData={userData}
+                          setLoggedIn={setLoggedIn}
+                          setSessionUser={setSessionUser}
+                        />
+                      )}
+                      options={{
+                        tabBarIcon: ({ color, size }) => (
+                          <List.Icon color={color} icon='archive' size={size} />
+                        ),
+                      }}
                     />
-                  )}
-                  options={{
-                    tabBarIcon: ({ color, size }) => (
-                      <List.Icon color={color} icon='history' size={size} />
-                    ),
-                  }}
-                />
-                {/* Add more screens as needed for Inventory mode */}
-              </>
+                    {/* Add LogScreen component */}
+                    <Tab.Screen
+                      name='Log'
+                      children={() => (
+                        <LogScreen
+                          changeMode={changeMode}
+                          userData={userData}
+                          setLoggedIn={setLoggedIn}
+                          setSessionUser={setSessionUser}
+                        />
+                      )}
+                      options={{
+                        tabBarIcon: ({ color, size }) => (
+                          <List.Icon color={color} icon='history' size={size} />
+                        ),
+                      }}
+                    />
+                    {/* Add more screens as needed for Inventory mode */}
+                  </>
+                )}
+              </Tab.Navigator>
+            ) : (
+              <LoginScreen
+                setLoggedIn={setLoggedIn}
+                setUserSession={setUserSession}
+                changeMode={changeMode}
+              />
             )}
-          </Tab.Navigator>
-        ) : (
-          <LoginScreen
-            setLoggedIn={setLoggedIn}
-            setUserSession={setUserSession}
-            changeMode={changeMode}
-          />
-        )}
-      </NavigationContainer>
-
-      <Portal>
-        <Modal
-          visible={welcomeModalVisible}
-          onDismiss={closeWelcomeModal}
-          contentContainerStyle={styles.modalContent}
-        >
-          <Image
-            style={styles.tinyLogo}
-            source={require('./assets/A2K-LOGO.png')}
-          />
-          <Text style={styles.modalText}>{`Welcome, ${
-            userData ? userData.User_DisplayName : ''
-          }!`}</Text>
-          <Button
-            mode='contained'
-            onPress={closeWelcomeModal}
-            style={styles.modalButton}
-          >
-            Close
-          </Button>
-        </Modal>
-      </Portal>
-    </PaperProvider>
+          </NavigationContainer>
+          <Portal>
+            <Modal
+              visible={welcomeModalVisible}
+              onDismiss={closeWelcomeModal}
+              contentContainerStyle={styles.modalContent}
+            >
+              <Image
+                style={styles.tinyLogo}
+                source={require('./assets/A2K-LOGO.png')}
+              />
+              <Text style={styles.modalText}>{`Welcome, ${
+                userData ? userData.User_DisplayName : ''
+              }!`}</Text>
+              <Button
+                mode='contained'
+                onPress={closeWelcomeModal}
+                style={styles.modalButton}
+              >
+                Close
+              </Button>
+            </Modal>
+          </Portal>
+        </SafeAreaView>
+      </PaperProvider>
+    </SafeAreaProvider>
   );
 };
 

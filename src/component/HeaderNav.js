@@ -12,8 +12,6 @@ const Header = ({ userData, setLoggedIn, changeMode }) => {
     setViewSettings(false); // Close settings modal after confirming logout
   };
 
-  const confirmLogin = () => {};
-
   const modalVisible = () => {
     setViewSettings(true);
   };

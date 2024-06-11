@@ -570,14 +570,14 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
               justifyContent: 'space-evenly',
             }}
           >
-            {/* <SelectList
+            <SelectList
               placeholder='Select Facility'
               boxStyles={styles.filterInput}
               dropdownStyles={styles.input}
               setSelected={setSelectedFacility}
               data={dropItemsFacility}
               save='value'
-            />    
+            />
             <SelectList
               placeholder='Select Category'
               boxStyles={styles.filterInput}
@@ -585,7 +585,7 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
               setSelected={setSelectedCategory}
               data={dropItems}
               save='value'
-            /> */}
+            />
             {/* <Dropdown
               data={dropItemsFacility}
               labelField='label'
@@ -604,21 +604,21 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
               list={dropItemsFacility}
             /> */}
 
-            <RNPickerSelect
+            {/* <RNPickerSelect
               onValueChange={(value) => setSelectedFacility(value)}
               items={dropItemsFacility}
               style={pickerSelectStyles}
               value={selectedFacility}
               useNativeAndroidPickerStyle={false}
-            />
-
+            /> */}
+            {/* 
             <RNPickerSelect
               onValueChange={(value) => setSelectedCategory(value)}
               items={dropItems}
               style={pickerSelectStyles}
               value={selectedCategory}
               useNativeAndroidPickerStyle={false}
-            />
+            /> */}
           </View>
           <List.Section>
             {inventoryData.length > 0 ? (
@@ -1129,6 +1129,14 @@ const InventoryScreen = ({ navigation, userData, setLoggedIn }) => {
         <FAB
           style={styles.fab}
           icon='plus'
+          size='medium'
+          onPress={addModalshow}
+        />
+      )}
+      {isAdmin() && (
+        <FAB
+          style={styles.fab2}
+          icon='filter'
           size='medium'
           onPress={addModalshow}
         />

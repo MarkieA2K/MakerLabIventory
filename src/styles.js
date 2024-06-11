@@ -21,6 +21,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 100,
   },
+  fab2: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 170,
+  },
   listItem: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingHorizontal: 10,
